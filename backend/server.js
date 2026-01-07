@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
+// REMOVE this line: const path = require('path');
 
 // Load environment variables
 require('dotenv').config();
@@ -17,11 +17,15 @@ console.log('Port:', PORT);
 console.log('Google Sheets ID:', process.env.GOOGLE_SHEETS_ID ? 'Set' : 'Not Set');
 console.log('Credentials:', process.env.GOOGLE_CREDENTIALS_BASE64 ? 'Base64 Set' : 'Not Set');
 
-// CORS configuration
+// CORS configuration - ALLOW NETLIFY FRONTEND
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? [process.env.FRONTEND_URL, 'https://rf-automation-1.onrender.com'] 
-        : ['http://localhost:5500', 'http://localhost:3000'],
+    origin: [
+        'https://deft-kitten-7ca5fb.netlify.app',  // Your Netlify frontend
+        'http://localhost:5500',                    // Local frontend
+        'http://localhost:3000',                    // Local dev
+        'https://rf-automation-1.onrender.com'      // Render itself
+    ],
+    credentials: true,
     optionsSuccessStatus: 200
 };
 
@@ -53,12 +57,23 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Serve frontend from backend (optional)
-app.use(express.static(path.join(__dirname, '../frontend')));
+// REMOVE THESE LINES COMPLETELY:
+// app.use(express.static(path.join(__dirname, '../frontend')));
+// app.get('/', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// });
 
-// Root route serves frontend
+// ADD THIS SIMPLE ROOT ENDPOINT INSTEAD:
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.json({
+        message: 'RF Automation Backend API',
+        endpoints: {
+            api: '/api/links',
+            health: '/health'
+        },
+        frontend: 'https://deft-kitten-7ca5fb.netlify.app',
+        documentation: 'Backend API only - frontend is hosted separately'
+    });
 });
 
 // Error handling middleware
@@ -85,5 +100,5 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
     console.log(`🌐 Health check: http://localhost:${PORT}/health`);
     console.log(`📊 API endpoint: http://localhost:${PORT}/api/links`);
-    console.log(`🔗 Frontend: http://localhost:${PORT}/`);
+    console.log(`🔗 Frontend: https://deft-kitten-7ca5fb.netlify.app`);
 });
