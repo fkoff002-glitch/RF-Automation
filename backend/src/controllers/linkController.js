@@ -1,52 +1,98 @@
+const googleSheetService = require('../services/googleSheetService');
+const fpingService = require('../services/fpingService');
+
 exports.getLinkStatus = async (req, res) => {
     try {
-        console.log('Fetching radio links from Google Sheets...');
+        console.log('1. Fetching inventory from Google Sheets...');
+        const inventory = await googleSheetService.getInventory();
         
-        // Mock data for testing
-        const mockData = {
-            "POP-1": [
-                {
-                    "Client_Name": "Test Site A",
-                    "Client_IP": "192.168.1.100",
-                    "Link_ID": "LNK-001",
-                    "Base_IP": "10.0.0.1",
-                    "Gateway_IP": "10.0.0.254",
-                    "Loopback_IP": "127.0.0.1",
-                    "diagnosis": {
-                        "status": "UP",
-                        "message": "All hops responding",
-                        "color": "green",
-                        "latency": "45ms"
-                    }
-                }
-            ],
-            "POP-2": [
-                {
-                    "Client_Name": "Test Site B",
-                    "Client_IP": "192.168.1.101",
-                    "Link_ID": "LNK-002",
-                    "Base_IP": "10.0.0.2",
-                    "Gateway_IP": "10.0.0.253",
-                    "Loopback_IP": "127.0.0.1",
-                    "diagnosis": {
-                        "status": "DOWN",
-                        "message": "No response from gateway",
-                        "color": "red",
-                        "latency": null,
-                        "failedHop": "Gateway"
-                    }
-                }
-            ]
-        };
+        if (!inventory || inventory.length === 0) {
+            console.log('⚠️ No links found in Google Sheet.');
+            return res.json({});
+        }
+
+        // 2. Extract all IPs to ping (Client, Base, Gateway, Loopback)
+        console.log('2. Preparing IPs for ping...');
+        const ipSet = new Set();
         
-        res.json(mockData);
-        
+        inventory.forEach(item => {
+            if (item.Client_IP) ipSet.add(item.Client_IP);
+            if (item.Base_IP) ipSet.add(item.Base_IP);
+            if (item.Gateway_IP) ipSet.add(item.Gateway_IP);
+            if (item.Loopback_IP && item.Loopback_IP !== 'N/A') ipSet.add(item.Loopback_IP);
+        });
+
+        const ipList = Array.from(ipSet).filter(ip => ip && ip.match(/^\d+\.\d+\.\d+\.\d+$/));
+        console.log(`   Running fping on ${ipList.length} unique IPs...`);
+
+        // 3. Run Active Diagnostics (fping)
+        const pingResults = await fpingService.runBulkPing(ipList);
+
+        // 4. Map results to Links & Group by POP
+        console.log('3. Analyzing results & grouping by POP...');
+        const groupedData = {};
+
+        inventory.forEach(link => {
+            const clientStatus = pingResults[link.Client_IP] || { alive: false };
+            const baseStatus = pingResults[link.Base_IP] || { alive: false };
+            const gatewayStatus = pingResults[link.Gateway_IP] || { alive: false };
+            
+            // Determine Link Status
+            let status = 'DOWN';
+            let color = 'red';
+            let message = 'Complete outage';
+            let failedHop = 'Client';
+
+            if (clientStatus.alive) {
+                status = 'UP';
+                color = 'green';
+                message = 'Link Operational';
+                failedHop = null;
+            } else if (baseStatus.alive) {
+                status = 'DOWN';
+                color = 'orange';
+                message = 'Base up, Client down';
+                failedHop = 'Client';
+            } else if (gatewayStatus.alive) {
+                status = 'CRITICAL';
+                color = 'red';
+                message = 'Base Station down';
+                failedHop = 'Base';
+            } else {
+                message = 'Gateway/Backhaul down';
+                failedHop = 'Gateway';
+            }
+
+            // Construct the diagnosis object
+            const diagnosis = {
+                status,
+                color,
+                message,
+                latency: clientStatus.latency,
+                failedHop
+            };
+
+            // Add to Group
+            const popName = link.POP_Name || 'Unknown POP';
+            if (!groupedData[popName]) {
+                groupedData[popName] = [];
+            }
+
+            // Combine Inventory Data + Diagnosis
+            groupedData[popName].push({
+                ...link,
+                diagnosis
+            });
+        });
+
+        console.log(`✅ Sending status for ${Object.keys(groupedData).length} POPs`);
+        res.json(groupedData);
+
     } catch (error) {
-        console.error('Error in getLinkStatus:', error);
+        console.error('❌ Error in getLinkStatus:', error);
         res.status(500).json({
             error: 'Internal Server Error',
-            message: error.message,
-            timestamp: new Date().toISOString()
+            message: error.message
         });
     }
 };
