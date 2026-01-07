@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Automation | Radio Link Monitor</title>
+    <title>RF Automation | ISP Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a;
@@ -15,62 +16,78 @@
             --success: #22c55e;
             --warning: #eab308;
             --danger: #ef4444;
-            --crit: #7f1d1d;
         }
-        body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
         
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-        
-        .header-btn {
-            background: var(--success); border: none; padding: 10px 20px; 
-            color: white; border-radius: 4px; cursor: pointer; font-weight: bold;
+        /* HEADER & CONTROLS */
+        header { 
+            display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; 
+            margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); 
         }
-        .header-btn:hover { background: #16a34a; }
-
-        .pop-group { margin-bottom: 30px; }
+        .controls { display: flex; gap: 15px; align-items: center; }
         
-        .pop-title { 
-            background: var(--card); padding: 10px 20px; border-radius: 6px 6px 0 0; 
-            font-weight: bold; display: inline-block; border: 1px solid var(--border); border-bottom: none;
+        input[type="text"] {
+            background: var(--card); border: 1px solid var(--border); color: white;
+            padding: 10px 15px; border-radius: 6px; width: 250px; outline: none;
         }
+        input[type="text"]:focus { border-color: var(--primary); }
+        
+        .refresh-btn {
+            background: var(--primary); border: none; padding: 10px 20px; 
+            color: white; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+        .refresh-btn:hover { background: #2563eb; }
 
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; background: var(--card); }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: #334155; color: var(--sub); font-size: 0.85rem; text-transform: uppercase; }
-        tr:hover { background: rgba(255,255,255,255,0.05); }
+        /* DASHBOARD STATS */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: bold; margin: 10px 0; }
+        .stat-label { color: var(--sub); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Status Badges */
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        /* DATA TABLES */
+        .pop-group { margin-bottom: 30px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+        .pop-header { 
+            padding: 15px 20px; background: #334155; font-weight: bold; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--sub); font-size: 0.85rem; text-transform: uppercase; background: rgba(0,0,0,0.2); }
+        tr:last-child td { border-bottom: none; }
+        
+        /* STATUS BADGES */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
         .bg-green { background: rgba(34, 197, 94, 0.2); color: var(--success); }
         .bg-orange { background: rgba(234, 179, 8, 0.2); color: var(--warning); }
         .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .bg-darkred { background: rgba(127, 29, 29, 0.5); color: #fca5a5; }
 
-        /* Expandable Hop Logic Visualizer */
-        .hop-row { display: none; background: #111; font-family: monospace; font-size: 0.8rem; }
-        .hop-row.visible { display: table-row; }
-        
-        .hop-step { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-        .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
-        .step-dot.alive { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .step-dot.dead { background: var(--danger); }
-        
+        /* TOGGLE SWITCH */
+        .toggle-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .toggle-switch { width: 40px; height: 20px; background: var(--border); border-radius: 20px; position: relative; transition: 0.3s; }
+        .toggle-switch::after { 
+            content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; 
+            background: white; border-radius: 50%; transition: 0.3s; 
+        }
+        input[type="checkbox"]:checked + .toggle-switch { background: var(--danger); }
+        input[type="checkbox"]:checked + .toggle-switch::after { transform: translateX(20px); }
+        input[type="checkbox"] { display: none; }
+
+        /* LOADING */
         .loading { text-align: center; padding: 50px; color: var(--sub); font-size: 1.2rem; }
         
-        .error-box {
-            background: var(--card); padding: 30px; border-radius: 8px; text-align: center; 
-            border: 1px solid var(--danger); max-width: 500px; margin: 50px auto;
-        }
-        .btn-path { font-size: 0.7rem; padding: 4px 8px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; border-radius: 4px; }
-        .btn-path:hover { border-color: var(--primary); color: var(--primary); }
+        /* PATH VISUALIZER */
+        .path-row { display: none; background: #0b1120; }
+        .path-row.visible { display: table-row; }
+        .steps { display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; }
+        .step { display: flex; align-items: center; gap: 10px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.up { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot.down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
 
-        @media (max-width: 768px) {
-            .pop-group, table, .pop-title { grid-template-columns: 1fr; gap: 0.5rem; }
-            th, td { padding: 8px; font-size: 0.85rem; }
-        }
+        .btn-small { padding: 4px 8px; font-size: 0.8rem; background: var(--border); border: none; color: white; border-radius: 4px; cursor: pointer; }
+        .btn-small:hover { background: var(--primary); }
     </style>
 </head>
 <body>
@@ -78,179 +95,202 @@
 <div class="container">
     <header>
         <div>
-            <h1 style="margin:0;">RF Automation</h1>
-            <span style="color:var(--sub); margin-left: 10px;">Radio Link Health Monitor</span>
+            <h1 style="margin:0;">RF Monitor</h1>
+            <span style="color:var(--sub)">Live ISP Network Status</span>
         </div>
-        <button class="header-btn" onclick="fetchData()">Refresh Status</button>
+        <div class="controls">
+            <label class="toggle-container">
+                <input type="checkbox" id="showIssuesOnly" onchange="filterData()">
+                <div class="toggle-switch"></div>
+                <span>Show Issues Only</span>
+            </label>
+            <input type="text" id="searchInput" placeholder="Search Client, IP, or POP..." onkeyup="filterData()">
+            <button class="refresh-btn" onclick="fetchData()">Refresh</button>
+        </div>
     </header>
 
-    <div id="app">
-        <div class="loading">
-            <div>🔍 Fetching Radio Links...</div>
+    <div class="stats-grid">
+        <div class="stat-card" style="border-color: var(--primary);">
+            <div class="stat-label">Total Links</div>
+            <div class="stat-value" id="totalLinks">0</div>
         </div>
+        <div class="stat-card" style="border-color: var(--success);">
+            <div class="stat-label">Online (UP)</div>
+            <div class="stat-value" id="totalUp" style="color: var(--success);">0</div>
+        </div>
+        <div class="stat-card" style="border-color: var(--danger);">
+            <div class="stat-label">Offline / Warning</div>
+            <div class="stat-value" id="totalDown" style="color: var(--danger);">0</div>
+        </div>
+    </div>
+
+    <div id="app">
+        <div class="loading">Loading live data...</div>
     </div>
 </div>
 
 <script>
-    // Auto-detect API URL based on current location
-    const getApiUrl = () => {
-        const currentHost = window.location.hostname;
-        
-        // 1. Local Development
-        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-            return 'http://localhost:3000/api/links';
-        }
-        
-        // 2. Production (Render Backend)
-        // If it's not localhost, assume we need the specific Render URL
-        return 'https://rf-automation-1.onrender.com/api/links';
-    };
+    // 1. Config: Auto-detect Backend URL
+    const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000/api/links' 
+        : 'https://rf-automation-1.onrender.com/api/links';
 
-    const API_URL = getApiUrl();
-    console.log('API URL:', API_URL);
+    let rawData = {}; // Store full data
 
+    // 2. Fetch Data
     async function fetchData() {
         const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="loading">
-                <div>🔍 Fetching Radio Links...</div>
-                <small>Connecting to: ${API_URL}</small>
-            </div>
-        `;
-
+        app.innerHTML = '<div class="loading">📡 Connecting to Backend...</div>';
+        
         try {
-            const response = await fetch(API_URL);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log('Data received:', Object.keys(data).length, 'POP groups');
-            renderUI(data);
-            
-        } catch (error) {
-            console.error('Fetch error:', error);
-            app.innerHTML = `
-                <div class="error-box">
-                    <h3 style="color: var(--danger);">⚠️ Connection Error</h3>
-                    <p style="color: var(--sub);">${error.message}</p>
-                    <p style="color: var(--sub); font-size: 0.9rem; margin-top: 20px;">
-                        Backend URL: ${API_URL}<br>
-                        Make sure the backend server is running.
-                    </p>
-                    <button onclick="fetchData()" class="header-btn" style="margin-top: 20px;">🔄 Retry</button>
-                </div>
-            `;
+            const res = await fetch(API_URL);
+            if (!res.ok) throw new Error('Backend Error');
+            rawData = await res.json();
+            renderUI(rawData);
+            updateStats(rawData);
+        } catch (err) {
+            app.innerHTML = `<div class="loading" style="color:var(--danger)">❌ Connection Failed. Check if Backend is running.</div>`;
+            console.error(err);
         }
     }
 
-    function renderUI(groupedData) {
+    // 3. Render Dashboard
+    function renderUI(data) {
         const app = document.getElementById('app');
         app.innerHTML = '';
+        
+        const filterText = document.getElementById('searchInput').value.toLowerCase();
+        const issuesOnly = document.getElementById('showIssuesOnly').checked;
 
         // Loop through each POP
-        for (const [popName, links] of Object.entries(groupedData)) {
-            
-            // Create POP Container
-            const section = document.createElement('div');
-            section.className = 'pop-group';
-            
-            const title = document.createElement('div');
-            title.className = 'pop-title';
-            title.innerText = `${popName} (${links.length} Links)`;
-            section.appendChild(title);
-
-            // Create Table
-            const table = document.createElement('table');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Client Name</th>
-                        <th>Link ID</th>
-                        <th>Status (Auto-Diag)</th>
-                        <th>Latency</th>
-                        <th>Path Visualization</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody');
-
-            // Populate Links
-            links.forEach(link => {
-                const d = link.diagnosis;
+        for (const [popName, links] of Object.entries(data)) {
+            // Filter Logic
+            const visibleLinks = links.filter(link => {
+                const matchesSearch = 
+                    link.Client_Name.toLowerCase().includes(filterText) || 
+                    link.Client_IP.includes(filterText) ||
+                    popName.toLowerCase().includes(filterText);
                 
-                // Main Row
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${link.Client_Name} <br><small style="color:var(--sub)">${link.Client_IP}</small></td>
-                    <td><span style="font-family:monospace">${link.Link_ID}</span></td>
-                    <td><span class="status-badge bg-${d.color === 'green' ? 'green' : d.color === 'orange' ? 'orange' : 'red'}">${d.status}</span> <br><small>${d.message}</small></td>
-                    <td>${d.latency ? d.latency + 'ms' : '-'}</td>
-                    <td><button class="btn-path" onclick="toggleHops('${link.Link_ID}')">View Path</button></td>
-                `;
-
-                // Expandable Row (Ping Path Visualizer)
-                const trExpand = document.createElement('tr');
-                trExpand.id = `hop-${link.Link_ID}`;
-                trExpand.className = 'hop-row';
+                const matchesIssue = issuesOnly ? link.diagnosis.status !== 'UP' : true;
                 
-                // Determine failure point to highlight in red
-                const failedHop = d.failedHop || 'None';
-                
-                // Build Steps
-                const steps = [
-                    { name: 'Client', ip: link.Client_IP, alive: d.status === 'UP' },
-                    { name: 'Base', ip: link.Base_IP, alive: d.color !== 'red' && d.color !== 'darkred' },
-                    { name: 'Gateway', ip: link.Gateway_IP, alive: d.color !== 'darkred' },
-                    { name: 'Loopback', ip: link.Loopback_IP, alive: true }
-                ];
-
-                let hopHtml = '<td colspan="5" style="padding: 15px;"><div style="display:flex; gap:20px; flex-wrap:wrap;">';
-                
-                steps.forEach((step, index) => {
-                    const isLast = index === steps.length - 1;
-                    hopHtml += `
-                        <div class="hop-step">
-                            <div style="font-size:0.7rem; color:var(--sub);">Step ${index+1}</div>
-                            <div class="step-dot ${step.alive ? 'alive' : 'dead'}"></div>
-                            <div>
-                                <strong>${step.name}</strong><br>
-                                <span style="color:var(--sub)">${step.ip}</span><br>
-                                <span style="color:${step.alive ? 'var(--success)' : 'var(--danger)'}">
-                                    ${step.alive ? 'ALIVE' : 'NO RESPONSE'}
-                                </span>
-                            </div>
-                            ${!isLast ? '➜' : ''}
-                        </div>
-                    `;
-                });
-
-                hopHtml += '</div></td>';
-                trExpand.innerHTML = hopHtml;
-
-                tbody.appendChild(tr);
-                tbody.appendChild(trExpand);
+                return matchesSearch && matchesIssue;
             });
 
-            section.appendChild(table);
+            if (visibleLinks.length === 0) continue;
+
+            // Build POP Section
+            const section = document.createElement('div');
+            section.className = 'pop-group';
+            section.innerHTML = `
+                <div class="pop-header">
+                    <span>${popName}</span>
+                    <span class="badge" style="background:rgba(255,255,255,0.1)">${visibleLinks.length} Links</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%">Client Name</th>
+                            <th>IP Address</th>
+                            <th>Status</th>
+                            <th>Latency</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-${popName.replace(/\s/g, '')}"></tbody>
+                </table>
+            `;
+
+            const tbody = section.querySelector('tbody');
+            
+            // Build Rows
+            visibleLinks.forEach(link => {
+                const d = link.diagnosis;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div style="font-weight:bold">${link.Client_Name}</div>
+                        <div style="font-size:0.8rem; color:var(--sub)">${link.Location || 'Unknown Loc'}</div>
+                    </td>
+                    <td style="font-family:monospace">${link.Client_IP}</td>
+                    <td>
+                        <span class="badge bg-${d.color}">
+                            ${d.status}
+                        </span>
+                        <div style="font-size:0.75rem; margin-top:4px; opacity:0.8">${d.message}</div>
+                    </td>
+                    <td style="font-family:monospace">${d.latency ? d.latency + 'ms' : '-'}</td>
+                    <td><button class="btn-small" onclick="togglePath(this)">View Path</button></td>
+                `;
+                
+                // Path Visualizer Row (Hidden by default)
+                const pathRow = document.createElement('tr');
+                pathRow.className = 'path-row';
+                pathRow.innerHTML = `
+                    <td colspan="5">
+                        <div class="steps">
+                            ${renderStep('Client', link.Client_IP, d.status === 'UP')}
+                            ➜
+                            ${renderStep('Base', link.Base_IP, d.color !== 'red')}
+                            ➜
+                            ${renderStep('Gateway', link.Gateway_IP, d.color !== 'darkred')}
+                            ➜
+                            ${renderStep('Loopback', link.Loopback_IP, true)}
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+                tbody.appendChild(pathRow);
+            });
+
             app.appendChild(section);
         }
     }
 
-    function toggleHops(linkId) {
-        const row = document.getElementById(`hop-${linkId}`);
-        if (row.classList.contains('visible')) {
-            row.classList.remove('visible');
-        } else {
-            row.classList.add('visible');
-        }
+    // Helper for Path Steps
+    function renderStep(label, ip, isUp) {
+        if (!ip) return ''; // Skip empty steps
+        return `
+            <div class="step">
+                <div class="dot ${isUp ? 'up' : 'down'}"></div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:bold">${label}</div>
+                    <div style="font-size:0.75rem; font-family:monospace; color:var(--sub)">${ip}</div>
+                </div>
+            </div>
+        `;
     }
 
-    // Load on start and auto-refresh
+    // 4. Update Summary Stats
+    function updateStats(data) {
+        let total = 0, up = 0, down = 0;
+        
+        Object.values(data).forEach(links => {
+            links.forEach(link => {
+                total++;
+                if (link.diagnosis.status === 'UP') up++;
+                else down++;
+            });
+        });
+
+        document.getElementById('totalLinks').innerText = total;
+        document.getElementById('totalUp').innerText = up;
+        document.getElementById('totalDown').innerText = down;
+    }
+
+    // 5. Interactivity
+    function filterData() {
+        renderUI(rawData);
+    }
+
+    function togglePath(btn) {
+        const row = btn.closest('tr').nextElementSibling;
+        row.classList.toggle('visible');
+    }
+
+    // Start
     fetchData();
-    setInterval(fetchData, 60000); // Auto refresh every 60s
+    setInterval(fetchData, 60000); // Auto-refresh every minute
 </script>
 
 </body>
