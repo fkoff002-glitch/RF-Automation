@@ -1,31 +1,21 @@
-# Use Debian Bullseye (Stable)
+# Use Debian Bullseye (Standard Stable Linux)
 FROM node:18-bullseye
 
-# 1. Install fping and capability tools
-RUN apt-get update && apt-get install -y fping libcap2-bin
+# 1. Install standard system ping (iputils-ping)
+# We do NOT apply any special permissions (chmod/setcap) to avoid breaking it.
+RUN apt-get update && apt-get install -y iputils-ping
 
-# 2. THE FIX: Find real binary and set permissions
-# We use 'readlink' to ensure we aren't setting permissions on a shortcut
-RUN export FPING_PATH=$(readlink -f $(which fping)) && \
-    echo "Found fping at: $FPING_PATH" && \
-    chmod u+s $FPING_PATH && \
-    setcap cap_net_raw+ep $FPING_PATH
-
-# 3. Verify permissions (Debugging)
-RUN ls -l $(readlink -f $(which fping))
-RUN getcap $(readlink -f $(which fping))
-
-# 4. Set working directory
+# 2. Set working directory
 WORKDIR /app
 
-# 5. Copy ALL files
+# 3. Copy ALL files
 COPY . .
 
-# 6. Install dependencies
+# 4. Install dependencies
 RUN npm install
 
-# 7. Expose port
+# 5. Expose port
 EXPOSE 3000
 
-# 8. Start command
+# 6. Start command
 CMD ["node", "server.js"]
