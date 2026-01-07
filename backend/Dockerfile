@@ -1,16 +1,19 @@
-# Use Debian Bullseye (Stable & standard permissions)
+# Use Debian Bullseye (Stable)
 FROM node:18-bullseye
 
-# 1. Install fping
-RUN apt-get update && apt-get install -y fping
+# 1. Install fping and capability tools
+RUN apt-get update && apt-get install -y fping libcap2-bin
 
-# 2. THE FIX: Apply SUID (Set User ID) permission
-# This forces fping to always run with root privileges, 
-# which works better in containers than 'setcap'
-RUN chmod 4755 /usr/bin/fping
+# 2. THE FIX: Find real binary and set permissions
+# We use 'readlink' to ensure we aren't setting permissions on a shortcut
+RUN export FPING_PATH=$(readlink -f $(which fping)) && \
+    echo "Found fping at: $FPING_PATH" && \
+    chmod u+s $FPING_PATH && \
+    setcap cap_net_raw+ep $FPING_PATH
 
-# 3. Verify installation during build (Debugging)
-RUN fping -v
+# 3. Verify permissions (Debugging)
+RUN ls -l $(readlink -f $(which fping))
+RUN getcap $(readlink -f $(which fping))
 
 # 4. Set working directory
 WORKDIR /app
