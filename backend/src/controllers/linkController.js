@@ -1,103 +1,63 @@
 const googleSheetService = require('../services/googleSheetService');
 const fpingService = require('../services/fpingService');
 
-// CACHE STORAGE
-let cache = {
-    data: null,
+// Cache inventory to avoid hitting Google Sheets too often
+let inventoryCache = {
+    data: [],
     lastFetch: 0
 };
 
-exports.getLinkStatus = async (req, res) => {
+// 1. GET INVENTORY (No Pinging - Safe for Firewall)
+exports.getInventory = async (req, res) => {
     try {
         const now = Date.now();
-        const CACHE_DURATION = 60 * 1000; // 60 Seconds
-
-        // 1. USE CACHE IF VALID (Prevents Google API overload)
-        if (cache.data && (now - cache.lastFetch < CACHE_DURATION)) {
-            console.log('⚡ Serving data from cache');
-            return res.json(cache.data);
+        // Fetch from Google only if cache is older than 5 minutes
+        if (inventoryCache.data.length > 0 && (now - inventoryCache.lastFetch < 300000)) {
+            return res.json(inventoryCache.data);
         }
 
-        console.log('1. Fetching inventory from Google Sheets...');
-        const inventory = await googleSheetService.getInventory();
+        console.log('📄 Fetching inventory from Google Sheets...');
+        const rawRows = await googleSheetService.getInventory();
         
-        if (!inventory || inventory.length === 0) {
-            return res.json({});
-        }
-
-        // 2. Preparing IPs
-        const ipSet = new Set();
-        inventory.forEach(item => {
-            if (item.Client_IP) ipSet.add(item.Client_IP);
-            if (item.Base_IP) ipSet.add(item.Base_IP);
-            if (item.Gateway_IP) ipSet.add(item.Gateway_IP);
-            if (item.Loopback_IP && item.Loopback_IP !== 'N/A') ipSet.add(item.Loopback_IP);
+        // Group by POP immediately for easier frontend handling
+        const grouped = {};
+        rawRows.forEach(row => {
+            const pop = row.POP_Name || 'Unknown';
+            if (!grouped[pop]) grouped[pop] = [];
+            // Add a default "Unknown" diagnosis
+            row.diagnosis = { status: 'PENDING', color: 'gray', message: 'Ready to Scan', latency: null };
+            grouped[pop].push(row);
         });
 
-        const ipList = Array.from(ipSet).filter(ip => ip && ip.match(/^\d+\.\d+\.\d+\.\d+$/));
-        console.log(`   Running ping on ${ipList.length} unique IPs...`);
-
-        // 3. Run Pings
-        const pingResults = await fpingService.runBulkPing(ipList);
-
-        // 4. Group Results
-        console.log('3. Analyzing results & grouping by POP...');
-        const groupedData = {};
-
-        inventory.forEach(link => {
-            const clientStatus = pingResults[link.Client_IP] || { alive: false };
-            const baseStatus = pingResults[link.Base_IP] || { alive: false };
-            const gatewayStatus = pingResults[link.Gateway_IP] || { alive: false };
-            
-            let status = 'DOWN';
-            let color = 'red';
-            let message = 'Complete outage';
-
-            if (clientStatus.alive) {
-                status = 'UP';
-                color = 'green';
-                message = 'Link Operational';
-            } else if (baseStatus.alive) {
-                status = 'DOWN';
-                color = 'orange';
-                message = 'Base up, Client down';
-            } else if (gatewayStatus.alive) {
-                status = 'CRITICAL';
-                color = 'red';
-                message = 'Base Station down';
-            } else {
-                message = 'Gateway/Backhaul down';
-            }
-
-            const diagnosis = {
-                status,
-                color,
-                message,
-                latency: clientStatus.latency
-            };
-
-            const popName = link.POP_Name || 'Unknown POP';
-            if (!groupedData[popName]) {
-                groupedData[popName] = [];
-            }
-
-            groupedData[popName].push({ ...link, diagnosis });
-        });
-
-        // 5. UPDATE CACHE
-        cache.data = groupedData;
-        cache.lastFetch = now;
-
-        console.log(`✅ Sending status for ${Object.keys(groupedData).length} POPs`);
-        res.json(groupedData);
+        inventoryCache.data = grouped;
+        inventoryCache.lastFetch = now;
+        
+        res.json(grouped);
 
     } catch (error) {
-        console.error('❌ Error in getLinkStatus:', error.message);
-        // Serve old cache if Google fails
-        if (cache.data) {
-            console.log('⚠️ Serving stale cache due to error');
-            return res.json(cache.data);
+        console.error('❌ Inventory Error:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// 2. ON-DEMAND PING (The new "Live Check" feature)
+exports.runOnDemandPing = async (req, res) => {
+    try {
+        const { targetIPs } = req.body; // Expects array of IPs: ["10.30.x.x", "10.30.y.y"]
+        
+        if (!targetIPs || !Array.isArray(targetIPs) || targetIPs.length === 0) {
+            return res.status(400).json({ error: "No IPs provided" });
         }
-        res.status(500).json({ error: 'Internal Server Error' });
+
+        console.log(`⚡ On-Demand Ping requested for ${targetIPs.length} IPs...`);
+        
+        // Use the existing service to ping just these specific IPs
+        const results = await fpingService.runBulkPing(targetIPs);
+        
+        res.json(results);
+
+    } catch (error) {
+        console.error('❌ Ping Error:', error.message);
+        res.status(500).json({ error: error.message });
     }
 };
