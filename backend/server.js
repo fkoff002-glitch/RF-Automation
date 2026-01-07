@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-// REMOVE this line: const path = require('path');
 
 // Load environment variables
 require('dotenv').config();
@@ -17,7 +16,7 @@ console.log('Port:', PORT);
 console.log('Google Sheets ID:', process.env.GOOGLE_SHEETS_ID ? 'Set' : 'Not Set');
 console.log('Credentials:', process.env.GOOGLE_CREDENTIALS_BASE64 ? 'Base64 Set' : 'Not Set');
 
-// CORS configuration - ALLOW NETLIFY FRONTEND
+// CORS configuration - ALLOW FRONTEND ACCESS
 const corsOptions = {
     origin: [
         'https://deft-kitten-7ca5fb.netlify.app',  // Your Netlify frontend
@@ -30,7 +29,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json()); // Important: Allows parsing JSON bodies for POST requests
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
@@ -39,40 +38,39 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes
-app.get('/api/links', linkController.getLinkStatus);
+// ================= ROUTES =================
 
-// Enhanced health check
+// 1. Get Inventory List (No Ping - Safe for Firewall)
+// This loads the client list from Google Sheets or Cache
+app.get('/api/links', linkController.getInventory);
+
+// 2. Run On-Demand Ping (Triggered by Button)
+// This accepts a list of IPs and pings ONLY those targets
+app.post('/api/ping', linkController.runOnDemandPing);
+
+// ==========================================
+
+// Health Check Endpoint
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         service: 'RF-Automation Backend',
-        version: '1.0.0',
+        version: '1.2.0', // Updated version
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        googleSheets: {
-            configured: !!process.env.GOOGLE_SHEETS_ID,
-            credentials: process.env.GOOGLE_CREDENTIALS_BASE64 ? 'Base64 Set' : 'Not Set'
-        }
+        mode: 'On-Demand Pinging'
     });
 });
 
-// REMOVE THESE LINES COMPLETELY:
-// app.use(express.static(path.join(__dirname, '../frontend')));
-// app.get('/', (req, res) => {
-//     res.sendFile(path.join(__dirname, '../frontend/index.html'));
-// });
-
-// ADD THIS SIMPLE ROOT ENDPOINT INSTEAD:
+// Root Endpoint
 app.get('/', (req, res) => {
     res.json({
         message: 'RF Automation Backend API',
         endpoints: {
-            api: '/api/links',
-            health: '/health'
+            inventory: 'GET /api/links',
+            ping: 'POST /api/ping',
+            health: 'GET /health'
         },
-        frontend: 'https://deft-kitten-7ca5fb.netlify.app',
-        documentation: 'Backend API only - frontend is hosted separately'
+        frontend: 'https://deft-kitten-7ca5fb.netlify.app'
     });
 });
 
@@ -90,15 +88,13 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).json({
         error: 'Not Found',
-        message: `Cannot ${req.method} ${req.url}`,
-        timestamp: new Date().toISOString()
+        message: `Cannot ${req.method} ${req.url}`
     });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-    console.log(`📊 API endpoint: http://localhost:${PORT}/api/links`);
-    console.log(`🔗 Frontend: https://deft-kitten-7ca5fb.netlify.app`);
+    console.log(`📊 API Inventory: http://localhost:${PORT}/api/links`);
+    console.log(`⚡ API Ping: POST http://localhost:${PORT}/api/ping`);
 });
