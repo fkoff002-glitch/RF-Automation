@@ -1,25 +1,28 @@
-# Use Debian Bullseye (More stable for network tools than Alpine)
+# Use Debian Bullseye (Stable & standard permissions)
 FROM node:18-bullseye
 
-# 1. Install fping and capability tools
-RUN apt-get update && apt-get install -y fping libcap2-bin
+# 1. Install fping
+RUN apt-get update && apt-get install -y fping
 
-# 2. FIX: Apply Network Capabilities
-# This allows fping to open network sockets without needing full root SUID
-# We verify the path is correct (/usr/bin/fping on Debian)
-RUN setcap cap_net_raw+ep /usr/bin/fping
+# 2. THE FIX: Apply SUID (Set User ID) permission
+# This forces fping to always run with root privileges, 
+# which works better in containers than 'setcap'
+RUN chmod 4755 /usr/bin/fping
 
-# 3. Set working directory
+# 3. Verify installation during build (Debugging)
+RUN fping -v
+
+# 4. Set working directory
 WORKDIR /app
 
-# 4. Copy ALL files
+# 5. Copy ALL files
 COPY . .
 
-# 5. Install dependencies
+# 6. Install dependencies
 RUN npm install
 
-# 6. Expose port
+# 7. Expose port
 EXPOSE 3000
 
-# 7. Start command
+# 8. Start command
 CMD ["node", "server.js"]
