@@ -1,21 +1,20 @@
 # Use Node.js 18 Alpine image
 FROM node:18-alpine
 
-# 1. Install fping and libcap for permissions
-RUN apk add --no-cache fping libcap
+# 1. Install fping
+RUN apk add --no-cache fping
 
-# 2. Grant fping permissions automatically
-RUN setcap cap_net_raw=ep /usr/sbin/fping || true
+# 2. FIX: Set SUID bit instead of using setcap
+# This grants fping permission to open raw sockets without needing complex capability configurations
+RUN chmod u+s /usr/sbin/fping
 
 # 3. Set working directory
 WORKDIR /app
 
-# 4. Copy ALL files from current folder (backend/)
-# This is safer than copying specific files one by one
+# 4. Copy ALL files
 COPY . .
 
 # 5. Install dependencies
-# If package.json is empty or missing, this step will show the real error
 RUN npm install
 
 # 6. Expose port
