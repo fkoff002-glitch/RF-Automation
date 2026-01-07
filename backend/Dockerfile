@@ -1,16 +1,21 @@
 # Use Node.js 18 Alpine image
 FROM node:18-alpine
 
-# 1. Install fping
-RUN apk add --no-cache fping
+# 1. Install fping AND libcap (required for assigning network permissions)
+RUN apk add --no-cache fping libcap
 
-# 2. FORCE REBUILD: Fixing permissions
-RUN echo "Applying SUID to fping..."
+# 2. Verify fping location (usually /usr/sbin/fping)
+RUN which fping
 
-# 3. Grant Root Permissions to fping (The Fix)
-# We use chmod 4755 to set the SUID bit.
-# This allows fping to open raw network sockets even if the app isn't root.
-RUN chmod 4755 /usr/sbin/fping
+# 3. FIX: Apply Network Permissions (Belt and Braces Approach)
+
+# Method A: Set SUID bit (Classic Unix permission)
+# This forces fping to run as root user
+RUN chmod u+s $(which fping)
+
+# Method B: Set Linux Capabilities (Modern Container permission)
+# This explicitly allows opening raw network sockets
+RUN setcap cap_net_raw+ep $(which fping)
 
 # 4. Set working directory
 WORKDIR /app
