@@ -1,28 +1,25 @@
-# Use standard Node.js 18 image (Debian-based, not Alpine)
-# This is much more stable for network tools like fping
-FROM node:18
+# Use Debian Bullseye (More stable for network tools than Alpine)
+FROM node:18-bullseye
 
-# 1. Install fping
-RUN apt-get update && apt-get install -y fping
+# 1. Install fping and capability tools
+RUN apt-get update && apt-get install -y fping libcap2-bin
 
-# 2. Grant Root Permissions (SUID)
-# This allows fping to open network sockets safely
-RUN chmod u+s /usr/bin/fping
+# 2. FIX: Apply Network Capabilities
+# This allows fping to open network sockets without needing full root SUID
+# We verify the path is correct (/usr/bin/fping on Debian)
+RUN setcap cap_net_raw+ep /usr/bin/fping
 
-# 3. Clean up to keep image size down
-RUN rm -rf /var/lib/apt/lists/*
-
-# 4. Set working directory
+# 3. Set working directory
 WORKDIR /app
 
-# 5. Copy ALL files
+# 4. Copy ALL files
 COPY . .
 
-# 6. Install dependencies
+# 5. Install dependencies
 RUN npm install
 
-# 7. Expose port
+# 6. Expose port
 EXPOSE 3000
 
-# 8. Start command
+# 7. Start command
 CMD ["node", "server.js"]
