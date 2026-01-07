@@ -3,295 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Automation | ISP Monitor</title>
+    <title>RF Monitor | Live Check</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --border: #334155;
-            --text: #f8fafc;
-            --sub: #94a3b8;
-            --primary: #3b82f6;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
-        }
+        :root { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #f8fafc; --primary: #3b82f6; --success: #22c55e; --danger: #ef4444; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
-        
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         
-        /* HEADER & CONTROLS */
-        header { 
-            display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; 
-            margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); 
-        }
-        .controls { display: flex; gap: 15px; align-items: center; }
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .search-box { background: var(--card); border: 1px solid var(--border); color: white; padding: 10px; width: 300px; border-radius: 6px; }
         
-        input[type="text"] {
-            background: var(--card); border: 1px solid var(--border); color: white;
-            padding: 10px 15px; border-radius: 6px; width: 250px; outline: none;
-        }
-        input[type="text"]:focus { border-color: var(--primary); }
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-blue { background: var(--primary); }
+        .btn-blue:hover { background: #2563eb; }
+        .btn-scan { background: var(--success); font-size: 0.8rem; }
         
-        .refresh-btn {
-            background: var(--primary); border: none; padding: 10px 20px; 
-            color: white; border-radius: 6px; cursor: pointer; font-weight: bold;
-        }
-        .refresh-btn:hover { background: #2563eb; }
-
-        /* DASHBOARD STATS */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
-        .stat-value { font-size: 2rem; font-weight: bold; margin: 10px 0; }
-        .stat-label { color: var(--sub); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* DATA TABLES */
+        /* TABLE */
         .pop-group { margin-bottom: 30px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-        .pop-header { 
-            padding: 15px 20px; background: #334155; font-weight: bold; 
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        .pop-header { padding: 15px; background: #334155; display: flex; justify-content: space-between; align-items: center; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--sub); font-size: 0.85rem; text-transform: uppercase; background: rgba(0,0,0,0.2); }
-        tr:last-child td { border-bottom: none; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(0,0,0,0.2); color: #94a3b8; font-size: 0.85rem; }
         
-        /* STATUS BADGES */
-        .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
-        .bg-green { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        .bg-orange { background: rgba(234, 179, 8, 0.2); color: var(--warning); }
-        .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-
-        /* TOGGLE SWITCH */
-        .toggle-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .toggle-switch { width: 40px; height: 20px; background: var(--border); border-radius: 20px; position: relative; transition: 0.3s; }
-        .toggle-switch::after { 
-            content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; 
-            background: white; border-radius: 50%; transition: 0.3s; 
-        }
-        input[type="checkbox"]:checked + .toggle-switch { background: var(--danger); }
-        input[type="checkbox"]:checked + .toggle-switch::after { transform: translateX(20px); }
-        input[type="checkbox"] { display: none; }
-
-        /* LOADING */
-        .loading { text-align: center; padding: 50px; color: var(--sub); font-size: 1.2rem; }
+        /* STATUS */
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .bg-gray { background: #64748b; box-shadow: none; }
+        .bg-green { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .bg-red { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
         
-        /* PATH VISUALIZER */
-        .path-row { display: none; background: #0b1120; }
-        .path-row.visible { display: table-row; }
-        .steps { display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; }
-        .step { display: flex; align-items: center; gap: 10px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-        .dot.up { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .dot.down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-        .btn-small { padding: 4px 8px; font-size: 0.8rem; background: var(--border); border: none; color: white; border-radius: 4px; cursor: pointer; }
-        .btn-small:hover { background: var(--primary); }
+        .console-output { font-family: monospace; font-size: 0.8rem; color: #a5b4fc; margin-top: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div>
-            <h1 style="margin:0;">RF Monitor</h1>
-            <span style="color:var(--sub)">Live ISP Network Status</span>
-        </div>
-        <div class="controls">
-            <label class="toggle-container">
-                <input type="checkbox" id="showIssuesOnly" onchange="filterData()">
-                <div class="toggle-switch"></div>
-                <span>Show Issues Only</span>
-            </label>
-            <input type="text" id="searchInput" placeholder="Search Client, IP, or POP..." onkeyup="filterData()">
-            <button class="refresh-btn" onclick="fetchData()">Refresh</button>
+        <h1>📡 RF Monitor <span style="font-size:0.5em; color:#94a3b8; font-weight:normal">On-Demand System</span></h1>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search Client, IP, or POP..." onkeyup="filterUI()">
+            <button class="btn btn-blue" onclick="loadInventory()">↻ Reload List</button>
         </div>
     </header>
 
-    <div class="stats-grid">
-        <div class="stat-card" style="border-color: var(--primary);">
-            <div class="stat-label">Total Links</div>
-            <div class="stat-value" id="totalLinks">0</div>
-        </div>
-        <div class="stat-card" style="border-color: var(--success);">
-            <div class="stat-label">Online (UP)</div>
-            <div class="stat-value" id="totalUp" style="color: var(--success);">0</div>
-        </div>
-        <div class="stat-card" style="border-color: var(--danger);">
-            <div class="stat-label">Offline / Warning</div>
-            <div class="stat-value" id="totalDown" style="color: var(--danger);">0</div>
-        </div>
-    </div>
-
-    <div id="app">
-        <div class="loading">Loading live data...</div>
-    </div>
+    <div id="app">Loading...</div>
 </div>
 
 <script>
-    // 1. Config: Auto-detect Backend URL
-    const API_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000/api/links' 
-        : 'https://rf-automation-1.onrender.com/api/links';
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://rf-automation-1.onrender.com/api';
+    let fullData = {};
 
-    let rawData = {}; // Store full data
-
-    // 2. Fetch Data
-    async function fetchData() {
-        const app = document.getElementById('app');
-        app.innerHTML = '<div class="loading">📡 Connecting to Backend...</div>';
-        
+    // 1. LOAD INVENTORY (No Ping)
+    async function loadInventory() {
+        document.getElementById('app').innerHTML = '<div style="text-align:center; padding:50px;">📄 Fetching Client List...</div>';
         try {
-            const res = await fetch(API_URL);
-            if (!res.ok) throw new Error('Backend Error');
-            rawData = await res.json();
-            renderUI(rawData);
-            updateStats(rawData);
+            const res = await fetch(`${API_URL}/links`);
+            fullData = await res.json();
+            renderUI(fullData);
         } catch (err) {
-            app.innerHTML = `<div class="loading" style="color:var(--danger)">❌ Connection Failed. Check if Backend is running.</div>`;
-            console.error(err);
+            document.getElementById('app').innerHTML = `<div style="color:red; text-align:center;">Error: ${err.message}</div>`;
         }
     }
 
-    // 3. Render Dashboard
+    // 2. RENDER UI
     function renderUI(data) {
         const app = document.getElementById('app');
         app.innerHTML = '';
-        
-        const filterText = document.getElementById('searchInput').value.toLowerCase();
-        const issuesOnly = document.getElementById('showIssuesOnly').checked;
+        const filter = document.getElementById('searchInput').value.toLowerCase();
 
-        // Loop through each POP
         for (const [popName, links] of Object.entries(data)) {
-            // Filter Logic
-            const visibleLinks = links.filter(link => {
-                const matchesSearch = 
-                    link.Client_Name.toLowerCase().includes(filterText) || 
-                    link.Client_IP.includes(filterText) ||
-                    popName.toLowerCase().includes(filterText);
-                
-                const matchesIssue = issuesOnly ? link.diagnosis.status !== 'UP' : true;
-                
-                return matchesSearch && matchesIssue;
-            });
+            // Filter logic
+            const visibleLinks = links.filter(l => 
+                l.Client_Name.toLowerCase().includes(filter) || 
+                l.Client_IP.includes(filter) || 
+                popName.toLowerCase().includes(filter)
+            );
 
             if (visibleLinks.length === 0) continue;
 
-            // Build POP Section
             const section = document.createElement('div');
             section.className = 'pop-group';
             section.innerHTML = `
                 <div class="pop-header">
-                    <span>${popName}</span>
-                    <span class="badge" style="background:rgba(255,255,255,0.1)">${visibleLinks.length} Links</span>
+                    <strong>${popName} (${visibleLinks.length})</strong>
+                    <button class="btn btn-scan" onclick="scanPOP('${popName}')">⚡ Scan This POP</button>
                 </div>
                 <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 30%">Client Name</th>
-                            <th>IP Address</th>
-                            <th>Status</th>
-                            <th>Latency</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-${popName.replace(/\s/g, '')}"></tbody>
+                    <thead><tr><th>Client</th><th>IP Address</th><th>Status</th><th>Latency</th></tr></thead>
+                    <tbody id="tbody-${popName.replace(/\s/g, '_')}"></tbody>
                 </table>
             `;
 
             const tbody = section.querySelector('tbody');
-            
-            // Build Rows
             visibleLinks.forEach(link => {
-                const d = link.diagnosis;
                 const tr = document.createElement('tr');
+                tr.id = `row-${link.Client_IP.replace(/\./g, '-')}`;
                 tr.innerHTML = `
-                    <td>
-                        <div style="font-weight:bold">${link.Client_Name}</div>
-                        <div style="font-size:0.8rem; color:var(--sub)">${link.Location || 'Unknown Loc'}</div>
-                    </td>
+                    <td>${link.Client_Name}<br><small style="color:#64748b">${link.Location}</small></td>
                     <td style="font-family:monospace">${link.Client_IP}</td>
-                    <td>
-                        <span class="badge bg-${d.color}">
-                            ${d.status}
-                        </span>
-                        <div style="font-size:0.75rem; margin-top:4px; opacity:0.8">${d.message}</div>
+                    <td id="status-${link.Client_IP.replace(/\./g, '-')}" class="status-cell">
+                        <span class="status-dot bg-gray"></span> Idle
                     </td>
-                    <td style="font-family:monospace">${d.latency ? d.latency + 'ms' : '-'}</td>
-                    <td><button class="btn-small" onclick="togglePath(this)">View Path</button></td>
+                    <td id="lat-${link.Client_IP.replace(/\./g, '-')}" style="font-family:monospace">-</td>
                 `;
-                
-                // Path Visualizer Row (Hidden by default)
-                const pathRow = document.createElement('tr');
-                pathRow.className = 'path-row';
-                pathRow.innerHTML = `
-                    <td colspan="5">
-                        <div class="steps">
-                            ${renderStep('Client', link.Client_IP, d.status === 'UP')}
-                            ➜
-                            ${renderStep('Base', link.Base_IP, d.color !== 'red')}
-                            ➜
-                            ${renderStep('Gateway', link.Gateway_IP, d.color !== 'darkred')}
-                            ➜
-                            ${renderStep('Loopback', link.Loopback_IP, true)}
-                        </div>
-                    </td>
-                `;
-
                 tbody.appendChild(tr);
-                tbody.appendChild(pathRow);
             });
-
             app.appendChild(section);
         }
     }
 
-    // Helper for Path Steps
-    function renderStep(label, ip, isUp) {
-        if (!ip) return ''; // Skip empty steps
-        return `
-            <div class="step">
-                <div class="dot ${isUp ? 'up' : 'down'}"></div>
-                <div>
-                    <div style="font-size:0.8rem; font-weight:bold">${label}</div>
-                    <div style="font-size:0.75rem; font-family:monospace; color:var(--sub)">${ip}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 4. Update Summary Stats
-    function updateStats(data) {
-        let total = 0, up = 0, down = 0;
+    // 3. SCAN LOGIC (Triggered by Button)
+    async function scanPOP(popName) {
+        const cleanPop = popName.replace(/\s/g, '_');
+        const tbody = document.getElementById(`tbody-${cleanPop}`);
+        const rows = tbody.querySelectorAll('tr');
         
-        Object.values(data).forEach(links => {
-            links.forEach(link => {
-                total++;
-                if (link.diagnosis.status === 'UP') up++;
-                else down++;
-            });
+        // Gather IPs to ping
+        const ipsToPing = [];
+        rows.forEach(row => {
+            // Extract IP from the row ID we set earlier
+            const ip = row.id.replace('row-', '').replace(/-/g, '.');
+            ipsToPing.push(ip);
+            
+            // Set UI to "Scanning"
+            document.getElementById(`status-${row.id.replace('row-', '')}`).innerHTML = 
+                '<span class="status-dot bg-gray" style="animation: pulse 1s infinite"></span> Pinging...';
         });
 
-        document.getElementById('totalLinks').innerText = total;
-        document.getElementById('totalUp').innerText = up;
-        document.getElementById('totalDown').innerText = down;
+        try {
+            // Send to Backend
+            const res = await fetch(`${API_URL}/ping`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetIPs: ipsToPing })
+            });
+            const results = await res.json();
+
+            // Update UI with Results
+            Object.keys(results).forEach(ip => {
+                const safeIP = ip.replace(/\./g, '-');
+                const data = results[ip];
+                const statusCell = document.getElementById(`status-${safeIP}`);
+                const latCell = document.getElementById(`lat-${safeIP}`);
+                
+                if (statusCell) {
+                    if (data.alive) {
+                        statusCell.innerHTML = `<span class="status-dot bg-green"></span> Reply from ${ip}`;
+                        latCell.innerText = `${data.latency}ms`;
+                        latCell.style.color = 'var(--success)';
+                    } else {
+                        statusCell.innerHTML = `<span class="status-dot bg-red"></span> Request Timed Out`;
+                        latCell.innerText = 'timeout';
+                        latCell.style.color = 'var(--danger)';
+                    }
+                }
+            });
+
+        } catch (err) {
+            console.error(err);
+            alert('Scan failed. Check console.');
+        }
     }
 
-    // 5. Interactivity
-    function filterData() {
-        renderUI(rawData);
-    }
+    function filterUI() { renderUI(fullData); }
 
-    function togglePath(btn) {
-        const row = btn.closest('tr').nextElementSibling;
-        row.classList.toggle('visible');
-    }
-
-    // Start
-    fetchData();
-    setInterval(fetchData, 60000); // Auto-refresh every minute
+    // Initial Load
+    loadInventory();
 </script>
 
+<style>
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+</style>
 </body>
 </html>
