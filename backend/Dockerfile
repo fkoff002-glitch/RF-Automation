@@ -1,26 +1,33 @@
-# Use lightweight Linux image (Alpine)
+# Use Node.js 18 Alpine base image
 FROM node:18-alpine
 
-# 1. Install fping inside the container
-# We also install 'libcap' to allow setting permissions without sudo
+# Install fping and libcap (for setcap)
 RUN apk add --no-cache fping libcap
 
-# 2. Set fping permissions automatically during build
-# This removes the need to run 'sudo' on the server
-RUN setcap cap_net_raw=ep /usr/bin/fping
+# Set fping permissions (correct path for Alpine Linux)
+RUN setcap cap_net_raw=ep /usr/sbin/fping
 
 # Set working directory
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# 3. Copy package files and install dependencies
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# 4. Copy source code
+# Copy application files
 COPY . .
 
-# 5. Expose the API port
+# Create a non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /usr/src/app
+
+USER nodejs
+
+# Expose port
 EXPOSE 3000
 
-# 6. Start the application
+# Start the application
 CMD ["node", "server.js"]
