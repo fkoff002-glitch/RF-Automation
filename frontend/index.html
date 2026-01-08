@@ -3,403 +3,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Automation | NOC Smart Monitor</title>
+    <title>RF Automation | Live NOC Monitor</title>
     <style>
+        /* --- NOC DARK THEME --- */
         :root {
-            --bg-body: #0f172a;
-            --bg-panel: #1e293b;
-            --border: #334155;
-            --text-main: #f1f5f9;
+            --bg-body: #0b0f19;
+            --bg-panel: #151e32;
+            --bg-input: #0f1525;
+            --border: #2a3b55;
+            --text-main: #e2e8f0;
             --text-muted: #94a3b8;
-            --primary: #3b82f6;
+            --accent: #3b82f6;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --font-mono: 'SFMono-Regular', Consolas, monospace;
+            --font-mono: 'Courier New', Courier, monospace;
         }
 
-        * { box-sizing: border-box; outline: none; }
-        body { margin: 0; background: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; padding-bottom: 50px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { background-color: var(--bg-body); color: var(--text-main); font-family: system-ui, -apple-system, sans-serif; padding-bottom: 40px; }
 
-        /* --- Header & Search --- */
+        /* --- HEADER --- */
         header {
-            background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;
-            backdrop-filter: blur(8px);
-        }
-        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
-        
-        .search-box {
-            flex: 1; position: relative;
-        }
-        .search-input {
-            width: 100%; padding: 12px 16px; padding-left: 40px;
-            background: var(--bg-panel); border: 1px solid var(--border);
-            border-radius: 8px; color: white; font-size: 1rem;
-        }
-        .search-input:focus { border-color: var(--primary); }
-        .search-icon { position: absolute; left: 12px; top: 14px; color: var(--text-muted); }
-
-        /* --- Dashboard --- */
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        
-        .empty-state {
-            text-align: center; padding: 4rem; color: var(--text-muted);
-            border: 2px dashed var(--border); border-radius: 12px;
-        }
-
-        /* --- Link Card / Table Row --- */
-        .link-row {
-            background: var(--bg-panel); border: 1px solid var(--border);
-            margin-bottom: 10px; padding: 15px; border-radius: 8px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky; top: 0; z-index: 50;
             display: flex; justify-content: space-between; align-items: center;
-            transition: transform 0.2s;
         }
-        .link-row:hover { transform: translateX(4px); border-color: var(--text-muted); }
-        
-        .link-info h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
-        .link-meta { font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono); display: flex; gap: 15px; }
-        
-        .status-pill {
-            padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8rem;
-            background: #334155; color: #94a3b8;
-        }
-        .status-up { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .status-down { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        .status-checking { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
+        .brand { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        .brand span { color: var(--accent); }
 
-        .btn {
-            background: var(--primary); color: white; border: none; padding: 8px 16px;
-            border-radius: 6px; cursor: pointer; font-weight: 600;
+        /* --- SEARCH BAR --- */
+        .search-container { width: 100%; max-width: 600px; position: relative; }
+        .search-input {
+            width: 100%; padding: 10px 15px 10px 40px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 6px; color: white; font-size: 0.9rem;
+            transition: border 0.2s;
         }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn:hover { filter: brightness(1.1); }
+        .search-input:focus { border-color: var(--accent); }
+        .search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-muted); }
 
-        /* --- Diagnostic Modal --- */
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+        /* --- MAIN DASHBOARD --- */
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        
+        .stats-row {
+            display: flex; gap: 15px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--bg-panel); border: 1px solid var(--border);
+            padding: 15px; border-radius: 6px; flex: 1;
+            display: flex; flex-direction: column;
+        }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
+
+        /* --- LINK LIST --- */
+        .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
+        
+        .link-card {
+            background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 8px; padding: 15px;
+            display: flex; flex-direction: column; gap: 10px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .link-card:hover { border-color: var(--text-muted); transform: translateY(-2px); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: start; }
+        .client-name { font-weight: bold; font-size: 1rem; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+        .status-up { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        .card-details { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+        .card-ip { font-family: var(--font-mono); color: var(--accent); }
+
+        .btn-diagnose {
+            margin-top: 5px; background: var(--accent); color: white; border: none;
+            padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;
+            font-size: 0.85rem; transition: background 0.2s;
+        }
+        .btn-diagnose:hover { background: #2563eb; }
+
+        /* --- DIAGNOSIS MODAL --- */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
         }
-        .modal.open { display: flex; }
-        .modal-content {
-            background: var(--bg-body); width: 90%; max-width: 800px;
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--bg-body); width: 90%; max-width: 700px;
             border: 1px solid var(--border); border-radius: 12px;
-            padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
         }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 2rem; }
 
-        /* Logic Steps Visualizer */
-        .logic-flow { margin-top: 2rem; position: relative; padding-left: 20px; border-left: 2px solid var(--border); }
-        .logic-step { position: relative; margin-bottom: 2rem; padding-left: 20px; }
-        .logic-step::before {
+        /* Logic Steps Visualization */
+        .logic-chain { margin-top: 20px; position: relative; padding-left: 20px; border-left: 2px solid var(--border); }
+        .step { position: relative; margin-bottom: 25px; padding-left: 15px; }
+        .step::before {
             content: ''; position: absolute; left: -26px; top: 0; width: 14px; height: 14px;
             background: var(--bg-body); border: 2px solid var(--text-muted); border-radius: 50%;
+            transition: all 0.3s;
         }
-        .logic-step.active::before { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        .logic-step.success::before { border-color: var(--success); background: var(--success); }
-        .logic-step.fail::before { border-color: var(--danger); background: var(--danger); }
+        .step.active::before { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .step.success::before { border-color: var(--success); background: var(--success); }
+        .step.fail::before { border-color: var(--danger); background: var(--danger); }
         
-        .step-title { font-weight: bold; font-size: 1rem; margin-bottom: 4px; }
-        .step-result { font-size: 0.9rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .step-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 2px; }
+        .step-detail { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
+
     </style>
 </head>
 <body>
 
+<!-- Header -->
 <header>
-    <div class="header-content">
-        <div style="font-weight:bold; font-size:1.2rem; color:var(--primary);">RF AUTOMATION</div>
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search Client Name, BTS, POP, or IP...">
-        </div>
-        <div id="conn-status" style="font-size:0.8rem; color:var(--text-muted)">Syncing...</div>
+    <div class="brand">
+        <span>RF</span> AUTOMATION <span style="font-size:0.8rem; color:#64748b;">(LIVE)</span>
     </div>
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search Client, BTS, POP, or IP Address...">
+    </div>
+    <div id="system-status" style="font-size:0.8rem; color:var(--success)">● Online</div>
 </header>
 
+<!-- Dashboard -->
 <div class="container">
-    <div id="results-area">
-        <!-- Initial State -->
-        <div class="empty-state">
-            <h2>NOC Dashboard Ready</h2>
-            <p>Inventory loaded. Search for a link to begin Smart Diagnosis.</p>
+    
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-label">Total Inventory</span>
+            <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Links Loaded</span>
+            <span class="stat-value" id="stat-loaded">0</span>
+        </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="results-grid" class="link-grid">
+        <!-- Initial Loading State -->
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">
+            Connecting to Backend...
         </div>
     </div>
 </div>
 
-<!-- Diagnostic Modal -->
-<div class="modal" id="diagModal">
-    <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-            <h2 id="m-title" style="margin:0;">Diagnosing...</h2>
-            <button onclick="closeModal()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">&times;</button>
+<!-- Diagnosis Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div>
+                <h3 id="m-title" style="margin:0;">Diagnosing Link</h3>
+                <span id="m-subtitle" style="font-size:0.8rem; color:var(--text-muted);"></span>
+            </div>
+            <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        
-        <div style="background:#0f172a; padding:15px; border-radius:8px; margin-bottom:1rem;">
-            <div id="m-meta" style="font-family:var(--font-mono); color:var(--text-muted); font-size:0.9rem;"></div>
-            <div id="m-final-status" style="margin-top:10px; font-weight:bold; font-size:1.2rem;">Waiting...</div>
-        </div>
+        <div class="modal-body">
+            <div style="background:var(--bg-panel); padding:15px; border-radius:6px; margin-bottom:20px; text-align:center;">
+                <div style="font-size:0.8rem; color:var(--text-muted);">FINAL STATUS</div>
+                <div id="m-final-result" style="font-size:1.2rem; font-weight:bold; margin-top:5px;">Processing...</div>
+            </div>
 
-        <!-- The Logic Flow Visualization -->
-        <div class="logic-flow" id="logic-steps">
-            <!-- Injected via JS -->
+            <div class="logic-chain" id="logic-steps">
+                <!-- Steps injected here -->
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const API_URL = 'https://rf-automation-1.onrender.com';
+    /**
+     * CONFIGURATION
+     */
+    const API_BASE = 'https://rf-automation-1.onrender.com';
     
     // STATE
-    let fullInventory = {}; // { POP_Name: [Link] }
-    let flatLinks = [];     // [Link] for search
+    let inventory = []; // Flat list of all 988 links
+    let isScanning = false;
 
-    // DOM
+    // DOM ELEMENTS
     const els = {
-        input: document.getElementById('searchInput'),
-        results: document.getElementById('results-area'),
-        status: document.getElementById('conn-status'),
-        modal: document.getElementById('diagModal'),
+        search: document.getElementById('searchInput'),
+        grid: document.getElementById('results-grid'),
+        statTotal: document.getElementById('stat-total'),
+        statLoaded: document.getElementById('stat-loaded'),
+        modal: document.getElementById('modal'),
         mTitle: document.getElementById('m-title'),
-        mMeta: document.getElementById('m-meta'),
-        mFinal: document.getElementById('m-final-status'),
-        mSteps: document.getElementById('logic-steps')
+        mSubtitle: document.getElementById('m-subtitle'),
+        mResult: document.getElementById('m-final-result'),
+        steps: document.getElementById('logic-steps')
     };
 
-    // INIT
+    /**
+     * INITIALIZATION
+     */
     document.addEventListener('DOMContentLoaded', async () => {
         await fetchInventory();
         
-        els.input.addEventListener('input', (e) => {
-            handleSearch(e.target.value);
+        // Search Listener
+        els.search.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = inventory.filter(item => 
+                item.Client_Name.toLowerCase().includes(term) ||
+                item.POP_Name.toLowerCase().includes(term) ||
+                item.BTS_Name.toLowerCase().includes(term) ||
+                item.Client_IP.includes(term) ||
+                item.Location.toLowerCase().includes(term)
+            );
+            renderGrid(filtered);
         });
     });
 
+    /**
+     * DATA FETCHING
+     */
     async function fetchInventory() {
         try {
-            const res = await fetch(`${API_URL}/api/links`);
-            const data = await res.json();
-            fullInventory = data;
+            const response = await fetch(`${API_BASE}/api/links`);
+            if (!response.ok) throw new Error('API Connection Failed');
+
+            const groupedData = await response.json();
             
-            // Flatten for searching
-            flatLinks = [];
-            for(const pop in data) {
-                data[pop].forEach(link => {
-                    link.POP_Name = pop; // Ensure POP is attached
-                    flatLinks.push(link);
+            // Flatten the grouped data into a single array for easier searching
+            inventory = [];
+            for (const popName in groupedData) {
+                groupedData[popName].forEach(link => {
+                    link.POP_Name = popName; // Ensure POP is attached
+                    inventory.push(link);
                 });
             }
+
+            els.statTotal.innerText = inventory.length;
+            els.statLoaded.innerText = inventory.length;
             
-            els.status.innerText = `✅ Live (${flatLinks.length} Links)`;
-            els.status.style.color = 'var(--success)';
+            // Show all initially (limit to 50 for performance if needed, but user wants search)
+            renderGrid(inventory.slice(0, 100)); 
+            
+            showToast('Inventory Loaded Successfully', 'success');
         } catch (err) {
-            els.status.innerText = '❌ Backend Offline';
-            els.status.style.color = 'var(--danger)';
-            alert("Failed to connect to Backend. Check server.");
+            els.grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--danger);">Failed to load data. Check backend logs.</div>`;
+            console.error(err);
         }
     }
 
-    // SEARCH HANDLER
-    function handleSearch(query) {
-        const term = query.toLowerCase();
-        if (!term) {
-            els.results.innerHTML = `<div class="empty-state"><h2>NOC Dashboard Ready</h2><p>Search for a link...</p></div>`;
-            return;
-        }
-
-        const matches = flatLinks.filter(l => 
-            l.Client_Name.toLowerCase().includes(term) ||
-            l.POP_Name.toLowerCase().includes(term) ||
-            l.Location.toLowerCase().includes(term) ||
-            l.Client_IP.includes(term)
-        );
-
-        renderResults(matches);
-    }
-
-    function renderResults(links) {
+    function renderGrid(links) {
         if (links.length === 0) {
-            els.results.innerHTML = `<div class="empty-state"><p>No links found matching query.</p></div>`;
+            els.grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-muted);">No links found.</div>`;
             return;
         }
 
-        els.results.innerHTML = links.map(link => {
-            // Default status visual
-            let statusHtml = `<span class="status-pill">UNKNOWN</span>`;
-            if (link.diagnosis) {
-                if (link.diagnosis.status === 'UP') statusHtml = `<span class="status-pill status-up">UP</span>`;
-                else if (link.diagnosis.status === 'DOWN') statusHtml = `<span class="status-pill status-down">DOWN</span>`;
-            }
-
+        els.grid.innerHTML = links.map(link => {
             return `
-            <div class="link-row">
-                <div class="link-info">
-                    <h3>${link.Client_Name}</h3>
-                    <div class="link-meta">
-                        <span>📍 ${link.Location}</span>
-                        <span>📡 ${link.POP_Name}</span>
-                        <span>🖥 ${link.Client_IP}</span>
-                    </div>
+            <div class="link-card">
+                <div class="card-header">
+                    <div class="client-name">${link.Client_Name}</div>
+                    <div class="status-dot" id="dot-${link.Link_ID}"></div>
                 </div>
-                <div style="text-align:right">
-                    <div style="margin-bottom:8px;">${statusHtml}</div>
-                    <button class="btn" onclick="runSmartDiagnosis('${link.Link_ID}')">Diagnose</button>
+                <div class="card-details">
+                    <div>📍 ${link.Location}</div>
+                    <div>📡 BTS: ${link.BTS_Name}</div>
+                    <div>🏢 POP: ${link.POP_Name}</div>
+                    <div class="card-ip">${link.Client_IP}</div>
                 </div>
+                <button class="btn-diagnose" onclick="startDiagnosis('${link.Link_ID}')">⚡ Run Diagnosis</button>
             </div>
             `;
         }).join('');
     }
 
     /**
-     * SMART DIAGNOSIS ENGINE (The Core Logic)
-     * Hierarchy: Client -> Base -> Gateway -> Peer Check -> Loopback
+     * SMART DIAGNOSIS ENGINE
+     * Logic: Client -> Base -> Gateway -> Peer Context -> Loopback
      */
-    async function runSmartDiagnosis(linkId) {
-        const link = flatLinks.find(l => l.Link_ID === linkId);
+    async function startDiagnosis(linkId) {
+        if (isScanning) {
+            alert("A scan is already in progress. Please wait.");
+            return;
+        }
+        isScanning = true;
+
+        const link = inventory.find(l => l.Link_ID === linkId);
         if (!link) return;
 
-        // 1. Open Modal & Set State
+        // Open Modal
         els.modal.classList.add('open');
-        els.mTitle.innerText = `Diagnosing: ${link.Client_Name}`;
-        els.mMeta.innerHTML = `POP: ${link.POP_Name} | BTS: ${link.BTS_Name}`;
-        els.mFinal.innerText = "Initiating Trace...";
-        els.mFinal.style.color = "white";
-        els.mSteps.innerHTML = ''; // Clear previous steps
+        els.mTitle.innerText = `Link: ${link.Client_Name}`;
+        els.mSubtitle.innerText = `POP: ${link.POP_Name} | ID: ${link.Link_ID}`;
+        els.mResult.innerText = "Initializing...";
+        els.mResult.style.color = "var(--text-main)";
+        els.steps.innerHTML = '';
 
-        // Helper to create visual steps
-        const addStep = (title, ip, result, msg) => {
+        // Helper to create step UI
+        const addStep = (title, detail, status) => {
             const div = document.createElement('div');
-            div.className = `logic-step ${result}`; // result: active, success, fail
-            div.innerHTML = `
-                <div class="step-title">${title}</div>
-                <div class="step-result">${ip} -> ${msg}</div>
-            `;
-            els.mSteps.appendChild(div);
+            div.className = `step ${status}`;
+            div.innerHTML = `<div class="step-title">${title}</div><div class="step-detail">${detail}</div>`;
+            els.steps.appendChild(div);
             return div;
         };
 
         try {
-            // --- BATCH 1: The Primary Chain ---
-            // IPs to check: Client, Base, Gateway
-            let ipsToPing = [link.Client_IP, link.Base_IP, link.Gateway_IP];
+            // --- STEP 1: CLIENT RADIO ---
+            let s1 = addStep("1. Client Radio", `Pinging ${link.Client_IP}...`, 'active');
+            const clientRes = await pingIP(link.Client_IP);
             
-            let step1 = addStep("1. Checking Client Radio", link.Client_IP, 'active', 'Sending ICMP...');
-            const pingRes1 = await getPingResults(ipsToPing);
+            if (clientRes.alive) {
+                s1.className = 'step success';
+                els.mResult.innerText = "LINK UP (Stable)";
+                els.mResult.style.color = "var(--success)";
+                updateDot(linkId, 'up');
+                isScanning = false;
+                return; // Stop logic
+            } else {
+                s1.className = 'step fail';
+            }
+
+            // --- STEP 2: BASE STATION ---
+            let s2 = addStep("2. Base Station", `Pinging ${link.Base_IP}...`, 'active');
+            const baseRes = await pingIP(link.Base_IP);
             
-            const cStat = pingRes1[link.Client_IP];
-            if (cStat && cStat.alive) {
-                step1.className = 'logic-step success';
-                els.mFinal.innerText = "LINK UP (Stable)";
-                els.mFinal.style.color = "var(--success)";
+            if (baseRes.alive) {
+                s2.className = 'step success';
+                els.mResult.innerText = "FAULT: Client CPE Down";
+                els.mResult.style.color = "var(--danger)";
+                updateDot(linkId, 'down');
+                isScanning = false;
                 return;
             } else {
-                step1.className = 'logic-step fail';
-                step1.querySelector('.step-result').innerText = `${link.Client_IP} -> Timed Out`;
+                s2.className = 'step fail';
             }
 
-            // --- LEVEL 2: Base Station ---
-            let step2 = addStep("2. Checking Base Station", link.Base_IP, 'active', 'Sending ICMP...');
-            const bStat = pingRes1[link.Base_IP];
-            if (bStat && bStat.alive) {
-                step2.className = 'logic-step success';
-                els.mFinal.innerText = "ISSUE FOUND: Client Radio Down (Local CPE)";
-                els.mFinal.style.color = "var(--danger)";
-                return; // Stop here
-            } else {
-                step2.className = 'logic-step fail';
-            }
-
-            // --- LEVEL 3: Gateway ---
-            let step3 = addStep("3. Checking Gateway", link.Gateway_IP, 'active', 'Sending ICMP...');
-            const gStat = pingRes1[link.Gateway_IP];
-            if (gStat && gStat.alive) {
-                step3.className = 'logic-step success';
-                els.mFinal.innerText = "ISSUE FOUND: Base Station Sector Down";
-                els.mFinal.style.color = "var(--danger)";
+            // --- STEP 3: GATEWAY ---
+            let s3 = addStep("3. Gateway", `Pinging ${link.Gateway_IP}...`, 'active');
+            const gateRes = await pingIP(link.Gateway_IP);
+            
+            if (gateRes.alive) {
+                s3.className = 'step success';
+                els.mResult.innerText = "FAULT: Base Sector Down";
+                els.mResult.style.color = "var(--danger)";
+                updateDot(linkId, 'down');
+                isScanning = false;
                 return;
             } else {
-                step3.className = 'logic-step fail';
+                s3.className = 'step fail';
             }
 
-            // --- LEVEL 4: Context Check (Peers) ---
-            // If Gateway is down, check if OTHER clients in same POP are reachable
-            // This checks if the specific Gateway Sector is down or the WHOLE POP.
-            let step4 = addStep("4. Checking POP Health (Peers)", "Sampling...", 'active', 'Probing other Bases...');
+            // --- STEP 4: PEER CHECK (CONTEXT) ---
+            // If Gateway is down, check if OTHER bases in same POP are reachable.
+            let s4 = addStep("4. POP Health Check", "Checking peer Base IPs...", 'active');
             
             // Find 3 other links in same POP
-            const peers = flatLinks
-                .filter(l => l.POP_Name === link.POP_Name && l.Link_ID !== link.Link_ID)
-                .slice(0, 3);
+            const peers = inventory.filter(l => l.POP_Name === link.POP_Name && l.Link_ID !== link.Link_ID).slice(0, 3);
             
             if (peers.length > 0) {
                 const peerIPs = peers.map(p => p.Base_IP);
-                const peerRes = await getPingResults(peerIPs);
+                const peerRes = await pingBatch(peerIPs);
                 
-                // If ANY peer is up, our gateway is isolated.
+                // If ANY peer is alive, our gateway is isolated.
                 const isPeerUp = Object.values(peerRes).some(r => r.alive);
                 
                 if (isPeerUp) {
-                    step4.querySelector('.step-result').innerText = `Peers detected UP. Isolated Gateway Failure.`;
-                    step4.className = 'logic-step fail';
-                    els.mFinal.innerText = "ISSUE FOUND: Isolated Gateway/Sector Failure";
-                    els.mFinal.style.color = "var(--danger)";
+                    s4.querySelector('.step-detail').innerText = "Peers detected UP. Isolated Gateway Failure.";
+                    s4.className = 'step fail';
+                    els.mResult.innerText = "FAULT: Isolated Gateway Failure";
+                    els.mResult.style.color = "var(--danger)";
+                    updateDot(linkId, 'down');
+                    isScanning = false;
                     return;
                 } else {
-                    step4.querySelector('.step-result').innerText = `All peers DOWN. Whole POP likely affected.`;
-                    step4.className = 'logic-step fail';
+                    s4.querySelector('.step-detail').innerText = "All peers DOWN. Whole POP affected.";
+                    s4.className = 'step fail';
                 }
             } else {
-                step4.querySelector('.step-result').innerText = `No peers found in POP.`;
-                step4.className = 'logic-step fail';
+                s4.querySelector('.step-detail').innerText = "No peers found in POP.";
+                s4.className = 'step fail';
             }
 
-            // --- LEVEL 5: Loopback (Core Router) ---
+            // --- STEP 5: LOOPBACK ---
             if (link.Loopback_IP && link.Loopback_IP !== 'N/A') {
-                let step5 = addStep("5. Checking Core Router (Loopback)", link.Loopback_IP, 'active', 'Last hop check...');
-                const loopRes = await getPingResults([link.Loopback_IP]);
-                const lStat = loopRes[link.Loopback_IP];
+                let s5 = addStep("5. Core Router (Loopback)", `Pinging ${link.Loopback_IP}...`, 'active');
+                const loopRes = await pingIP(link.Loopback_IP);
                 
-                if (lStat && lStat.alive) {
-                    step5.className = 'logic-step success';
-                    els.mFinal.innerText = "CRITICAL: Router Alive, Backhaul Fiber/Switch Down";
-                    els.mFinal.style.color = "var(--warning)";
+                if (loopRes.alive) {
+                    s5.className = 'step success';
+                    els.mResult.innerText = "CRITICAL: Router Alive, Backhaul/Fiber Down";
+                    els.mResult.style.color = "var(--warning)";
                 } else {
-                    step5.className = 'logic-step fail';
-                    els.mFinal.innerText = "CRITICAL: POP Core Router DEAD";
-                    els.mFinal.style.color = "var(--danger)";
+                    s5.className = 'step fail';
+                    els.mResult.innerText = "CRITICAL: POP Core Router DEAD";
+                    els.mResult.style.color = "var(--danger)";
                 }
             } else {
-                els.mFinal.innerText = "CRITICAL: Complete POP Outage (No Loopback defined)";
-                els.mFinal.style.color = "var(--danger)";
+                els.mResult.innerText = "CRITICAL: POP Outage (No Loopback)";
+                els.mResult.style.color = "var(--danger)";
             }
 
-        } catch (e) {
-            console.error(e);
-            addStep("Error", "System", "fail", "Ping API Timeout or Error");
-            els.mFinal.innerText = "Diagnosis Failed";
+        } catch (err) {
+            addStep("Error", err.message, 'fail');
+        } finally {
+            isScanning = false;
         }
     }
 
-    // PING WRAPPER
-    async function getPingResults(ips) {
+    /**
+     * BACKEND INTEGRATION
+     */
+    async function pingIP(ip) {
+        const res = await pingBatch([ip]);
+        return res[ip] || { alive: false, latency: 0 };
+    }
+
+    async function pingBatch(ips) {
         try {
-            const res = await fetch(`${API_URL}/api/ping`, {
+            const response = await fetch(`${API_BASE}/api/ping`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ips })
             });
-            return await res.json();
+            if (!response.ok) throw new Error('Ping API Error');
+            return await response.json();
         } catch (e) {
-            // If backend fails, simulate for UI logic testing
-            const simulated = {};
-            ips.forEach(ip => {
-                // Random fail simulation if backend is dead
-                simulated[ip] = { alive: Math.random() > 0.5, latency: 0 };
-            });
-            return simulated;
+            console.error(e);
+            // Fallback simulation if backend is down (for UI testing)
+            const sim = {};
+            ips.forEach(ip => { sim[ip] = { alive: false, latency: 0 }; });
+            return sim;
+        }
+    }
+
+    function updateDot(id, status) {
+        const dot = document.getElementById(`dot-${id}`);
+        if (dot) {
+            dot.className = `status-dot status-${status}`;
         }
     }
 
     function closeModal() {
         els.modal.classList.remove('open');
+    }
+
+    // Simple Toast
+    function showToast(msg, type='info') {
+        const div = document.createElement('div');
+        div.style.cssText = `position:fixed; bottom:20px; right:20px; background:var(--bg-panel); color:white; padding:10px 20px; border:1px solid var(--border); border-radius:6px; z-index:999;`;
+        div.innerText = msg;
+        if(type === 'success') div.style.borderColor = 'var(--success)';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
     }
 </script>
 </body>
