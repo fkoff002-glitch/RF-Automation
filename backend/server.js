@@ -2,100 +2,107 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
+
+// dotenv is optional on Render if vars are set in Dashboard, 
+// but we keep it for local development.
 require('dotenv').config();
 
 const app = express();
 
 // --- 1. MIDDLEWARE ---
-
-// ENABLE CORS (Fixes the frontend error)
 app.use(cors());
-
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Serve static files if needed
+app.use(express.static(path.join(__dirname, 'public')));
 
-// --- 2. CONFIGURATION ---
+// --- 2. CONFIGURATION & AUTH ---
 
+// NOTE: On Render, ensure these are set in the Environment tab.
 const SPREADSHEET_ID = process.env.SHEET_ID;
 const CREDENTIALS_BASE64 = process.env.GOOGLE_CREDENTIALS_BASE64;
 
-// Decode Base64 Service Account
-let serviceAccountAuth = null;
-try {
-    if (CREDENTIALS_BASE64) {
-        const buffer = Buffer.from(CREDENTIALS_BASE64, 'base64');
-        const credentials = JSON.parse(buffer);
-        serviceAccountAuth = new google.auth.JWT(
-            credentials.client_email,
-            null,
-            credentials.private_key,
-            ['https://www.googleapis.com/auth/spreadsheets.readonly']
-        );
-        console.log("✅ Google Auth Initialized (JWT)");
-    } else {
-        console.warn("⚠️ WARNING: No credentials found in env.");
-    }
-} catch (e) {
-    console.error("❌ Failed to parse credentials:", e.message);
-}
+// Validate Config safely
+let sheets = null;
+let authError = null;
 
-// Initialize Sheets API
-const sheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
+try {
+    if (!SPREADSHEET_ID) {
+        console.error("❌ CRITICAL: SHEET_ID is missing from Environment Variables.");
+        console.error("   Please add it to the Render Dashboard Environment settings.");
+        throw new Error("SHEET_ID missing");
+    }
+
+    if (!CREDENTIALS_BASE64) {
+        console.error("❌ CRITICAL: GOOGLE_CREDENTIALS_BASE64 is missing from Environment Variables.");
+        throw new Error("Credentials missing");
+    }
+
+    // Decode Credentials
+    const buffer = Buffer.from(CREDENTIALS_BASE64, 'base64');
+    const credentials = JSON.parse(buffer);
+
+    const auth = new google.auth.JWT(
+        credentials.client_email,
+        null,
+        credentials.private_key,
+        ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    );
+
+    sheets = google.sheets({ version: 'v4', auth });
+    console.log("✅ Google Auth Initialized (JWT)");
+    console.log(`📊 Target Sheet ID: ${SPREADSHEET_ID}`);
+
+} catch (e) {
+    console.error("❌ Initialization Failed:", e.message);
+    authError = e.message;
+}
 
 // --- 3. API ROUTES ---
 
 // GET /api/links
 app.get('/api/links', async (req, res) => {
-    try {
-        if (!SPREADSHEET_ID) throw new Error("SHEET_ID is missing in .env");
+    if (!sheets) {
+        return res.status(503).json({ 
+            error: "Service Unavailable", 
+            details: `Configuration Error: ${authError}` 
+        });
+    }
 
-        console.log(`📄 Fetching from Sheet ID: ${SPREADSHEET_ID}, Range: RADIO_LINKS!A2:I`);
-        
+    try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'RADIO_LINKS!A2:I', // Assuming headers are in Row 1, data starts Row 2
+            range: 'RADIO_LINKS!A2:I', // Adjust if header count changes
         });
 
         const rows = response.data.values;
         if (!rows || rows.length === 0) {
-            console.log('⚠️ No data found.');
             return res.json({});
         }
 
-        console.log(`📈 Retrieved ${rows.length} rows from Google Sheets`);
-
-        // Mapping Array to Objects
-        // Assuming Header Order: Link_ID, POP_Name, BTS_Name, Client_Name, Client_IP, Base_IP, Gateway_IP, Loopback_IP, Location
         const grouped = {};
 
         rows.forEach(row => {
-            // Safety check for incomplete rows
             if (row.length < 5) return;
 
             const link = {
-                Link_ID: row[0] || 'N/A',
+                Link_ID: row[0],
                 POP_Name: row[1] || 'Unknown POP',
-                BTS_Name: row[2] || 'Unknown BTS',
-                Client_Name: row[3] || 'Unknown Client',
-                Client_IP: row[4] || 'N/A',
-                Base_IP: row[5] || 'N/A',
-                Gateway_IP: row[6] || 'N/A',
-                Loopback_IP: row[7] || 'N/A',
-                Location: row[8] || 'Unknown'
+                BTS_Name: row[2],
+                Client_Name: row[3],
+                Client_IP: row[4],
+                Base_IP: row[5],
+                Gateway_IP: row[6],
+                Loopback_IP: row[7],
+                Location: row[8]
             };
 
-            const popName = link.POP_Name;
-            if (!grouped[popName]) {
-                grouped[popName] = [];
-            }
-            grouped[popName].push(link);
+            if (!grouped[link.POP_Name]) grouped[link.POP_Name] = [];
+            grouped[link.POP_Name].push(link);
         });
 
-        console.log(`✅ Processed ${Object.keys(grouped).length} POPs`);
         res.json(grouped);
 
     } catch (error) {
-        console.error("❌ API Error:", error.message);
+        console.error("API Data Fetch Error:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
@@ -108,22 +115,19 @@ app.post('/api/ping', async (req, res) => {
     const results = {};
     const { exec } = require('child_process');
     
-    // Helper to ping IP (using fping or standard ping)
     const ping = (ip) => new Promise(resolve => {
-        // 'ping -c 1' sends 1 packet. '-W 2' waits 2 seconds max.
-        exec(`ping -c 1 -W 2 ${ip}`, (error, stdout) => {
-            if (error) {
-                resolve({ alive: false, latency: 0 });
-            } else {
-                // Simple regex to extract time (e.g. time=1.2ms)
-                const match = stdout.match(/time=(\d+(\.\d+)?)/);
+        // Using fping if available is faster, otherwise standard ping
+        const cmd = process.platform === 'win32' ? `ping -n 1 -w 2000 ${ip}` : `ping -c 1 -W 2 ${ip}`;
+        exec(cmd, (error, stdout) => {
+            if (error) resolve({ alive: false, latency: 0 });
+            else {
+                const match = stdout.match(/time[=<](\d+(\.\d+)?)/);
                 const latency = match ? parseFloat(match[1]) : 0;
                 resolve({ alive: true, latency });
             }
         });
     });
 
-    // Run pings in parallel
     const promises = ips.map(ip => ping(ip).then(r => results[ip] = r));
     await Promise.all(promises);
     
@@ -135,6 +139,5 @@ app.post('/api/ping', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log(`📊 API Inventory: http://localhost:${PORT}/api/links`);
-    console.log(`⚡ API Ping: POST http://localhost:${PORT}/api/ping`);
+    console.log(`🔗 Frontend: https://fkoff002-glitch.github.io/RF-Automation/`);
 });
