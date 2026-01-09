@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF NOC | Smart Diagnosis</title>
+    <title>RF NOC | Live Path Monitor</title>
     <style>
-        /* --- NOC DARK THEME --- */
         :root {
             --bg-body: #0b0f19; --bg-panel: #151e32; --bg-header: #1e293b;
             --border: #2a3b55; --text-main: #e2e8f0; --text-muted: #94a3b8;
             --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg-body); color: var(--text-main); font-family: sans-serif; padding-bottom: 50px; }
+        body { background: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; }
 
         /* HEADER */
-        header { background: var(--bg-panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .brand { font-weight: bold; font-size: 1.2rem; } .brand span { color: var(--accent); }
-        .search-input { padding: 8px 12px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 4px; color: white; width: 300px; }
+        header { background: var(--bg-panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .brand span { color: var(--accent); font-weight: bold; }
+        .search-input { background: var(--bg-body); border: 1px solid var(--border); color: white; padding: 8px 12px; border-radius: 4px; width: 300px; }
 
-        /* GRID */
+        /* CONTENT */
         .container { max-width: 1600px; margin: 20px auto; padding: 0 20px; }
-        .pop-section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); overflow: hidden; }
-        .pop-header { padding: 12px 20px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; }
+        .pop-section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); }
+        .pop-header { padding: 12px 20px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: 600; }
         .pop-header:hover { background: #253346; }
+        
         .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; padding: 15px; }
         .client-grid.show { display: grid; }
 
-        /* CARD */
+        /* CARDS */
         .link-card { background: var(--bg-panel); border: 1px solid var(--border); padding: 15px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
         .link-card:hover { border-color: var(--accent); }
         .card-top { display: flex; justify-content: space-between; font-weight: bold; }
@@ -35,24 +35,30 @@
         .status-up { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
         .val-ip { font-family: monospace; color: var(--text-main); }
-        
-        .btn-diag { margin-top: 8px; background: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+
+        .btn-diag { margin-top: 5px; background: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
         .btn-diag:hover { background: #2563eb; }
 
         /* MODAL */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
         .modal-overlay.open { display: flex; }
-        .modal-box { background: var(--bg-panel); padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 500px; max-width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .step-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff10; }
-        .step-status { font-weight: bold; }
-        .status-green { color: var(--success); } .status-red { color: var(--danger); }
+        .modal-box { background: var(--bg-panel); padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 500px; max-width: 95%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        
+        .result-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #ffffff10; align-items: center; }
+        .res-label { font-weight: bold; font-size: 0.95rem; }
+        .res-ip { font-family: monospace; color: var(--text-muted); font-size: 0.85rem; }
+        .res-status { font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
+        
+        .st-UP { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .st-DOWN { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .st-SKIPPED { color: #64748b; }
 
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand"><span>RF</span> SMART NOC</div>
+    <div class="brand"><span>RF</span> LIVE MONITOR</div>
     <input type="text" id="searchInput" class="search-input" placeholder="Search Client, POP, IP...">
 </header>
 
@@ -62,41 +68,40 @@
 
 <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
-        <h3 style="margin-bottom: 5px;">Diagnosis Report</h3>
-        <div id="modal-client" style="color:var(--accent); margin-bottom: 20px;"></div>
-        
-        <div id="modal-steps" style="margin-bottom: 20px;">
+        <h3 id="m-client" style="color:var(--accent); margin-bottom: 5px;">Client Name</h3>
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 20px;">Path Diagnostics Report</div>
+
+        <div id="m-steps">
             </div>
 
-        <div style="background: #00000030; padding: 10px; border-radius: 4px; text-align: center;">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">FINAL CONCLUSION</div>
-            <div id="modal-result" style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;"></div>
-            <div id="modal-cause" style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;"></div>
+        <div style="background: rgba(0,0,0,0.2); margin-top: 20px; padding: 15px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Final Conclusion</div>
+            <div id="m-final" style="font-size: 1.3rem; font-weight: bold; margin: 5px 0;">--</div>
+            <div id="m-cause" style="font-size: 0.9rem; color: #cbd5e1;">--</div>
         </div>
-        <button onclick="closeModal()" style="width:100%; margin-top:15px; padding:10px; background:#334155; border:none; color:white; border-radius:4px; cursor:pointer;">Close</button>
+
+        <button onclick="closeModal()" style="width:100%; margin-top:15px; padding:12px; background:#334155; border:none; color:white; border-radius:4px; cursor:pointer;">Close Report</button>
     </div>
 </div>
 
 <script>
-    const API_BASE = 'http://192.168.0.104:8000'; 
-    let rawData = {}; 
+    const API_BASE = 'http://192.168.0.104:8000';
+    let rawData = {};
 
     document.addEventListener('DOMContentLoaded', fetchInventory);
 
     // SEARCH
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const container = document.getElementById('main-container');
-        container.innerHTML = '';
-        if (!term) { renderAll(rawData); return; }
-
-        Object.keys(rawData).forEach(popName => {
-            const data = rawData[popName];
-            const matches = data.clients.filter(c => 
+        document.getElementById('main-container').innerHTML = '';
+        if(!term) { renderAll(rawData); return; }
+        
+        Object.keys(rawData).forEach(pop => {
+            const matches = rawData[pop].clients.filter(c => 
                 c.Client_Name.toLowerCase().includes(term) || c.Client_IP.includes(term)
             );
-            if (popName.toLowerCase().includes(term) || matches.length > 0) {
-                renderPopSection(popName, data.loopback_ip, matches.length > 0 ? matches : data.clients, true);
+            if(matches.length > 0 || pop.toLowerCase().includes(term)) {
+                renderPop(pop, rawData[pop].loopback_ip, matches.length ? matches : rawData[pop].clients, true);
             }
         });
     });
@@ -104,66 +109,60 @@
     async function fetchInventory() {
         try {
             const res = await fetch(`${API_BASE}/api/inventory`);
-            if (!res.ok) throw new Error("Backend Offline");
+            if(!res.ok) throw new Error("Backend Offline");
             rawData = await res.json();
             renderAll(rawData);
-        } catch (err) {
-            document.getElementById('main-container').innerHTML = `<div style="text-align:center; color:var(--danger); padding:40px;">Backend Offline. Run start_backend_v3.bat</div>`;
+        } catch(e) {
+            document.getElementById('main-container').innerHTML = `<div style="text-align:center; color:var(--danger); padding:40px;">Backend Offline (Run .bat file)</div>`;
         }
     }
 
     function renderAll(data) {
         document.getElementById('main-container').innerHTML = '';
-        Object.keys(data).sort().forEach(pop => {
-            renderPopSection(pop, data[pop].loopback_ip, data[pop].clients, false);
-        });
+        Object.keys(data).sort().forEach(pop => renderPop(pop, data[pop].loopback_ip, data[pop].clients, false));
     }
 
-    function renderPopSection(popName, loopback, clients, expand) {
-        const container = document.getElementById('main-container');
-        const gridId = `grid-${popName.replace(/\s+/g, '')}`;
-        
-        const section = document.createElement('div');
-        section.className = 'pop-section';
-        section.innerHTML = `
-            <div class="pop-header" onclick="document.getElementById('${gridId}').classList.toggle('show')">
-                <span>🏢 ${popName} <small style="color:var(--accent); margin-left:10px;">LB: ${loopback}</small></span>
-                <span>${clients.length} Clients ▾</span>
-            </div>
-            <div id="${gridId}" class="client-grid ${expand ? 'show' : ''}">
-                ${clients.map(c => `
-                    <div class="link-card">
-                        <div class="card-top">
-                            <div>${c.Client_Name}</div>
-                            <div class="status-dot" id="dot-${c.Client_IP.replace(/\./g, '-')}" title="Unknown"></div>
+    function renderPop(pop, lb, clients, expand) {
+        const id = `g-${pop.replace(/\s+/g,'')}`;
+        const html = `
+            <div class="pop-section">
+                <div class="pop-header" onclick="document.getElementById('${id}').classList.toggle('show')">
+                    <span>🏢 ${pop} <small style="color:var(--accent); margin-left:10px;">LB: ${lb}</small></span>
+                    <span>${clients.length} Clients ▾</span>
+                </div>
+                <div id="${id}" class="client-grid ${expand?'show':''}">
+                    ${clients.map(c => `
+                        <div class="link-card">
+                            <div class="card-top">
+                                <div>${c.Client_Name}</div>
+                                <div class="status-dot" id="d-${c.Client_IP.replace(/\./g,'-')}"></div>
+                            </div>
+                            <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
+                                <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
+                                <div>Base: ${c.Base_IP}</div>
+                            </div>
+                            <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}')">⚡ Diagnosis</button>
                         </div>
-                        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
-                            <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
-                            <div>Base: ${c.Base_IP}</div>
-                        </div>
-                        <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}')">⚡ Diagnosis</button>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        container.appendChild(section);
+                    `).join('')}
+                </div>
+            </div>`;
+        document.getElementById('main-container').insertAdjacentHTML('beforeend', html);
     }
 
     async function runDiag(btn, name, ip) {
-        btn.innerText = "⏳ Scanning...";
+        btn.innerText = "⏳ Scanning Path...";
         btn.disabled = true;
-
         try {
             const res = await fetch(`${API_BASE}/api/diagnose`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, ip: ip })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, ip})
             });
             const data = await res.json();
             
-            // Update UI Dot
-            const dot = document.getElementById(`dot-${ip.replace(/\./g, '-')}`);
-            if (data.final_status.includes("UP")) {
+            // Update Dot
+            const dot = document.getElementById(`d-${ip.replace(/\./g,'-')}`);
+            if(data.final_status.includes("UP")) {
                 dot.className = "status-dot status-up";
                 btn.style.background = "var(--success)";
                 btn.innerText = "LINK UP";
@@ -171,43 +170,39 @@
                 dot.className = "status-dot status-down";
                 btn.style.background = "var(--danger)";
                 btn.innerText = "ISSUE FOUND";
-                // Only show modal if there is an issue
                 showModal(name, data);
             }
-        } catch (e) {
+        } catch(e) {
             btn.innerText = "Error";
         } finally {
-            setTimeout(() => { btn.disabled = false; btn.innerText = "⚡ Re-Test"; btn.style.background = ""; }, 4000);
+            setTimeout(() => { btn.disabled=false; btn.innerText="⚡ Re-Test"; btn.style.background=""; }, 4000);
         }
     }
 
-    function showModal(clientName, data) {
-        document.getElementById('modal-client').innerText = clientName;
-        document.getElementById('modal-result').innerText = data.final_status;
-        document.getElementById('modal-cause').innerText = data.cause || "";
+    function showModal(name, data) {
+        document.getElementById('m-client').innerText = name;
+        document.getElementById('m-final').innerText = data.final_status;
+        document.getElementById('m-cause').innerText = data.cause;
         
-        // Colorize Result
-        const resEl = document.getElementById('modal-result');
-        if(data.final_status.includes("UP")) resEl.style.color = "var(--success)";
-        else if(data.final_status.includes("CLIENT")) resEl.style.color = "var(--warning)";
-        else resEl.style.color = "var(--danger)";
+        const f = document.getElementById('m-final');
+        if(data.final_status.includes("UP")) f.style.color = "var(--success)";
+        else if(data.final_status.includes("CLIENT")) f.style.color = "var(--warning)";
+        else f.style.color = "var(--danger)";
 
-        // Render Steps
-        const stepsHtml = data.steps.map(s => `
-            <div class="step-row">
-                <span>${s.step} <small style="color:#64748b">(${s.ip})</small></span>
-                <span class="step-status ${s.status.includes('UP') ? 'status-green' : 'status-red'}">${s.status}</span>
+        document.getElementById('m-steps').innerHTML = data.steps.map(s => `
+            <div class="result-row">
+                <div>
+                    <div class="res-label">${s.target}</div>
+                    <div class="res-ip">${s.ip}</div>
+                </div>
+                <div class="res-status st-${s.status}">${s.status}</div>
             </div>
         `).join('');
-        document.getElementById('modal-steps').innerHTML = stepsHtml;
-
+        
         document.getElementById('diagModal').classList.add('open');
     }
 
-    function closeModal() {
-        document.getElementById('diagModal').classList.remove('open');
-    }
+    function closeModal() { document.getElementById('diagModal').classList.remove('open'); }
 </script>
-
 </body>
 </html>
