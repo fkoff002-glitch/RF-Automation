@@ -24,7 +24,7 @@
         .pop-header { padding: 12px 20px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: 600; }
         .pop-header:hover { background: #253346; }
         
-        .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; padding: 15px; }
+        .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; padding: 15px; }
         .client-grid.show { display: grid; }
 
         /* CARDS */
@@ -36,8 +36,15 @@
         .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
         .val-ip { font-family: monospace; color: var(--text-main); }
 
-        .btn-diag { margin-top: 5px; background: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        /* BUTTON & SCANNING STATE */
+        .btn-diag { margin-top: 5px; background: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; min-height: 36px; transition: all 0.2s;}
         .btn-diag:hover { background: #2563eb; }
+        
+        /* The Scanning Animation Box */
+        .scan-box { display: flex; flex-direction: column; align-items: start; gap: 4px; font-size: 0.75rem; font-family: monospace; padding: 5px; }
+        .scan-row { display: flex; justify-content: space-between; width: 100%; color: #cbd5e1; }
+        .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 5px;}
+        @keyframes spin { to {transform: rotate(360deg);} }
 
         /* MODAL */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
@@ -51,8 +58,6 @@
         
         .st-UP { color: #10b981; background: rgba(16, 185, 129, 0.1); }
         .st-DOWN { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-        .st-SKIPPED { color: #64748b; }
-
     </style>
 </head>
 <body>
@@ -141,7 +146,9 @@
                                 <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
                                 <div>Base: ${c.Base_IP}</div>
                             </div>
-                            <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}')">⚡ Diagnosis</button>
+                            <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}', '${c.Base_IP}')">
+                                ⚡ Check Status
+                            </button>
                         </div>
                     `).join('')}
                 </div>
@@ -149,9 +156,34 @@
         document.getElementById('main-container').insertAdjacentHTML('beforeend', html);
     }
 
-    async function runDiag(btn, name, ip) {
-        btn.innerText = "⏳ Scanning Path...";
+    function calculateGateway(baseIp) {
+        if(!baseIp || baseIp === 'N/A') return 'N/A';
+        const parts = baseIp.split('.');
+        if(parts.length !== 4) return 'Unknown';
+        // Subtract 1 from last octet
+        parts[3] = parseInt(parts[3]) - 1;
+        return parts.join('.');
+    }
+
+    async function runDiag(btn, name, ip, baseIp) {
+        const originalText = btn.innerHTML;
+        const gwIp = calculateGateway(baseIp);
+
+        // --- THE VISUAL UPDATE ---
+        // We replace the button text with a Live List of what we are checking
+        btn.innerHTML = `
+            <div class="scan-box">
+                <div style="color:white; font-weight:bold; margin-bottom:2px;">
+                   <span class="spinner"></span> Scanning...
+                </div>
+                <div class="scan-row"><span>Client:</span> <span>${ip}</span></div>
+                <div class="scan-row"><span>Base:</span> <span>${baseIp}</span></div>
+                <div class="scan-row"><span>GW:</span> <span>${gwIp}</span></div>
+            </div>
+        `;
         btn.disabled = true;
+        btn.style.cursor = "wait";
+
         try {
             const res = await fetch(`${API_BASE}/api/diagnose`, {
                 method: 'POST',
@@ -160,22 +192,29 @@
             });
             const data = await res.json();
             
-            // Update Dot
+            // Update UI Dot
             const dot = document.getElementById(`d-${ip.replace(/\./g,'-')}`);
             if(data.final_status.includes("UP")) {
                 dot.className = "status-dot status-up";
                 btn.style.background = "var(--success)";
-                btn.innerText = "LINK UP";
+                btn.innerHTML = "LINK UP 🟢";
             } else {
                 dot.className = "status-dot status-down";
                 btn.style.background = "var(--danger)";
-                btn.innerText = "ISSUE FOUND";
+                btn.innerHTML = "ISSUE FOUND 🔴";
                 showModal(name, data);
             }
         } catch(e) {
-            btn.innerText = "Error";
+            btn.innerHTML = "Error";
+            btn.style.background = "var(--warning)";
         } finally {
-            setTimeout(() => { btn.disabled=false; btn.innerText="⚡ Re-Test"; btn.style.background=""; }, 4000);
+            // Restore button after 4 seconds
+            setTimeout(() => { 
+                btn.disabled = false; 
+                btn.style.background = ""; 
+                btn.style.cursor = "pointer";
+                btn.innerHTML = originalText; 
+            }, 5000);
         }
     }
 
