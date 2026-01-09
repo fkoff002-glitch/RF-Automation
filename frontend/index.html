@@ -3,215 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOC Monitor | Telco View</title>
+    <title>RF NOC | Smart Diagnosis</title>
     <style>
         /* --- NOC DARK THEME --- */
         :root {
-            --bg-body: #0b0f19;
-            --bg-panel: #151e32;
-            --bg-header: #1e293b;
-            --border: #2a3b55;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
+            --bg-body: #0b0f19; --bg-panel: #151e32; --bg-header: #1e293b;
+            --border: #2a3b55; --text-main: #e2e8f0; --text-muted: #94a3b8;
+            --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; padding-bottom: 40px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-body); color: var(--text-main); font-family: sans-serif; padding-bottom: 50px; }
 
         /* HEADER */
-        header {
-            background-color: var(--bg-panel); border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem; position: sticky; top: 0; z-index: 50;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .brand { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-        .brand span { color: var(--accent); }
+        header { background: var(--bg-panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .brand { font-weight: bold; font-size: 1.2rem; } .brand span { color: var(--accent); }
+        .search-input { padding: 8px 12px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 4px; color: white; width: 300px; }
 
-        /* CONTAINER */
-        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
-
-        /* SEARCH */
-        .search-input {
-            width: 300px; padding: 8px 12px; background: var(--bg-body);
-            border: 1px solid var(--border); border-radius: 4px; color: white;
-        }
-
-        /* --- POP SECTIONS (New) --- */
-        .pop-section { margin-bottom: 30px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        
-        .pop-header {
-            background: var(--bg-header); padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; user-select: none;
-        }
+        /* GRID */
+        .container { max-width: 1600px; margin: 20px auto; padding: 0 20px; }
+        .pop-section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); overflow: hidden; }
+        .pop-header { padding: 12px 20px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; }
         .pop-header:hover { background: #253346; }
-        
-        .pop-title { font-weight: bold; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 10px; }
-        .pop-meta { font-family: monospace; color: var(--accent); font-size: 0.9rem; background: rgba(59, 130, 246, 0.1); padding: 4px 8px; border-radius: 4px; }
-        .pop-count { color: var(--text-muted); font-size: 0.9rem; }
+        .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; padding: 15px; }
+        .client-grid.show { display: grid; }
 
-        /* CLIENT GRID */
-        .client-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px; padding: 20px; background: var(--bg-panel);
-            border-top: 1px solid var(--border);
-        }
-        .client-grid.hidden { display: none; }
-
-        /* CLIENT CARD */
-        .link-card {
-            background: var(--bg-body); border: 1px solid var(--border);
-            border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px;
-            transition: transform 0.2s;
-        }
-        .link-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-
-        .card-top { display: flex; justify-content: space-between; }
-        .client-name { font-weight: bold; font-size: 0.95rem; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-        .status-up { background: var(--success); box-shadow: 0 0 6px var(--success); }
-        .status-down { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-
-        .card-info { font-size: 0.8rem; color: var(--text-muted); display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
-        .label { color: #64748b; }
+        /* CARD */
+        .link-card { background: var(--bg-panel); border: 1px solid var(--border); padding: 15px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
+        .link-card:hover { border-color: var(--accent); }
+        .card-top { display: flex; justify-content: space-between; font-weight: bold; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #334155; }
+        .status-up { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
         .val-ip { font-family: monospace; color: var(--text-main); }
-
-        .btn-diag {
-            margin-top: 5px; background: var(--accent); color: white; border: none;
-            padding: 6px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
-        }
+        
+        .btn-diag { margin-top: 8px; background: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-diag:hover { background: #2563eb; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--bg-panel); padding: 25px; border-radius: 8px; border: 1px solid var(--border); width: 500px; max-width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .step-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff10; }
+        .step-status { font-weight: bold; }
+        .status-green { color: var(--success); } .status-red { color: var(--danger); }
 
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand"><span>RF</span> NOC VIEW</div>
-    <input type="text" id="searchInput" class="search-input" placeholder="Filter Clients or IPs...">
-    <div style="color:var(--success); font-size:0.8rem;">● Live System</div>
+    <div class="brand"><span>RF</span> SMART NOC</div>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search Client, POP, IP...">
 </header>
 
 <div class="container" id="main-container">
-    <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading Inventory...</div>
+    <div style="text-align:center; padding:50px; color:var(--text-muted);">Loading Inventory...</div>
+</div>
+
+<div class="modal-overlay" id="diagModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 5px;">Diagnosis Report</h3>
+        <div id="modal-client" style="color:var(--accent); margin-bottom: 20px;"></div>
+        
+        <div id="modal-steps" style="margin-bottom: 20px;">
+            </div>
+
+        <div style="background: #00000030; padding: 10px; border-radius: 4px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">FINAL CONCLUSION</div>
+            <div id="modal-result" style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;"></div>
+            <div id="modal-cause" style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;"></div>
+        </div>
+        <button onclick="closeModal()" style="width:100%; margin-top:15px; padding:10px; background:#334155; border:none; color:white; border-radius:4px; cursor:pointer;">Close</button>
+    </div>
 </div>
 
 <script>
-    const API_BASE = 'http://192.168.0.104:8000'; // Change to localhost:8000 if testing on same PC
-    let rawData = {}; // Store full data
+    const API_BASE = 'http://192.168.0.104:8000'; 
+    let rawData = {}; 
 
     document.addEventListener('DOMContentLoaded', fetchInventory);
 
-    // Search Functionality
+    // SEARCH
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         const container = document.getElementById('main-container');
-        container.innerHTML = ''; // Clear current
+        container.innerHTML = '';
+        if (!term) { renderAll(rawData); return; }
 
-        // Iterate over all POPs
-        for (const [popName, data] of Object.entries(rawData)) {
-            // Filter clients inside this POP
-            const matchingClients = data.clients.filter(c => 
-                c.Client_Name.toLowerCase().includes(term) || 
-                c.Client_IP.includes(term)
+        Object.keys(rawData).forEach(popName => {
+            const data = rawData[popName];
+            const matches = data.clients.filter(c => 
+                c.Client_Name.toLowerCase().includes(term) || c.Client_IP.includes(term)
             );
-
-            // If POP matches OR any client matches, render the section
-            if (popName.toLowerCase().includes(term) || matchingClients.length > 0) {
-                // If filtering, show only matching clients. If clearing search, show all.
-                const clientsToShow = term ? matchingClients : data.clients;
-                if(clientsToShow.length > 0) {
-                    renderPopSection(popName, data.loopback_ip, clientsToShow, true);
-                }
+            if (popName.toLowerCase().includes(term) || matches.length > 0) {
+                renderPopSection(popName, data.loopback_ip, matches.length > 0 ? matches : data.clients, true);
             }
-        }
+        });
     });
 
     async function fetchInventory() {
         try {
             const res = await fetch(`${API_BASE}/api/inventory`);
-            if (!res.ok) throw new Error("Backend Error");
-            
+            if (!res.ok) throw new Error("Backend Offline");
             rawData = await res.json();
             renderAll(rawData);
-            
         } catch (err) {
-            document.getElementById('main-container').innerHTML = 
-                `<div style="color:var(--danger); text-align:center;">
-                    <h3>Backend Offline</h3>
-                    <p>Ensure run_server.bat is running.</p>
-                    <p>${err.message}</p>
-                 </div>`;
+            document.getElementById('main-container').innerHTML = `<div style="text-align:center; color:var(--danger); padding:40px;">Backend Offline. Run start_backend_v3.bat</div>`;
         }
     }
 
     function renderAll(data) {
-        const container = document.getElementById('main-container');
-        container.innerHTML = '';
-        
-        // Sort keys (POPs) alphabetically
-        const popNames = Object.keys(data).sort();
-        
-        popNames.forEach(pop => {
-            const info = data[pop];
-            renderPopSection(pop, info.loopback_ip, info.clients);
+        document.getElementById('main-container').innerHTML = '';
+        Object.keys(data).sort().forEach(pop => {
+            renderPopSection(pop, data[pop].loopback_ip, data[pop].clients, false);
         });
     }
 
-    function renderPopSection(popName, loopback, clients, forceExpand = false) {
+    function renderPopSection(popName, loopback, clients, expand) {
         const container = document.getElementById('main-container');
+        const gridId = `grid-${popName.replace(/\s+/g, '')}`;
         
-        // Create Section HTML
         const section = document.createElement('div');
         section.className = 'pop-section';
-        
-        const gridId = `grid-${popName.replace(/\s+/g, '-')}`;
-        
         section.innerHTML = `
-            <div class="pop-header" onclick="toggleGrid('${gridId}')">
-                <div class="pop-title">
-                    <span>🏢 ${popName}</span>
-                    ${loopback !== 'N/A' ? `<span class="pop-meta">LB: ${loopback}</span>` : ''}
-                </div>
-                <div class="pop-count">${clients.length} Clients ▾</div>
+            <div class="pop-header" onclick="document.getElementById('${gridId}').classList.toggle('show')">
+                <span>🏢 ${popName} <small style="color:var(--accent); margin-left:10px;">LB: ${loopback}</small></span>
+                <span>${clients.length} Clients ▾</span>
             </div>
-            <div id="${gridId}" class="client-grid ${forceExpand ? '' : 'hidden'}">
-                ${clients.map(client => `
+            <div id="${gridId}" class="client-grid ${expand ? 'show' : ''}">
+                ${clients.map(c => `
                     <div class="link-card">
                         <div class="card-top">
-                            <div class="client-name">${client.Client_Name}</div>
-                            <div class="status-dot" id="dot-${client.Client_IP}"></div>
+                            <div>${c.Client_Name}</div>
+                            <div class="status-dot" id="dot-${c.Client_IP.replace(/\./g, '-')}" title="Unknown"></div>
                         </div>
-                        <div class="card-info">
-                            <div class="label">Client IP:</div>
-                            <div class="val-ip">${client.Client_IP}</div>
-                            <div class="label">BTS:</div>
-                            <div>${client.BTS_Name}</div>
-                            <div class="label">VLAN/Loc:</div>
-                            <div>${client.Location}</div>
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
+                            <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
+                            <div>Base: ${c.Base_IP}</div>
                         </div>
-                        <button class="btn-diag" onclick="runDiag('${client.Client_Name}', '${client.Client_IP}')">
-                            ⚡ Check Status
-                        </button>
+                        <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}')">⚡ Diagnosis</button>
                     </div>
                 `).join('')}
             </div>
         `;
-        
         container.appendChild(section);
     }
 
-    function toggleGrid(id) {
-        document.getElementById(id).classList.toggle('hidden');
-    }
-
-    async function runDiag(name, ip) {
-        const btn = event.target;
-        const originalText = btn.innerText;
+    async function runDiag(btn, name, ip) {
         btn.innerText = "⏳ Scanning...";
         btn.disabled = true;
 
@@ -223,27 +161,51 @@
             });
             const data = await res.json();
             
-            // Update UI based on result
-            if(data.final_status.includes("UP")) {
-                document.getElementById(`dot-${ip}`).className = "status-dot status-up";
+            // Update UI Dot
+            const dot = document.getElementById(`dot-${ip.replace(/\./g, '-')}`);
+            if (data.final_status.includes("UP")) {
+                dot.className = "status-dot status-up";
                 btn.style.background = "var(--success)";
                 btn.innerText = "LINK UP";
             } else {
-                document.getElementById(`dot-${ip}`).className = "status-dot status-down";
+                dot.className = "status-dot status-down";
                 btn.style.background = "var(--danger)";
-                btn.innerText = "LINK DOWN";
+                btn.innerText = "ISSUE FOUND";
+                // Only show modal if there is an issue
+                showModal(name, data);
             }
-            
         } catch (e) {
-            alert("Error: " + e.message);
             btn.innerText = "Error";
         } finally {
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.innerText = originalText;
-                btn.style.background = "";
-            }, 5000);
+            setTimeout(() => { btn.disabled = false; btn.innerText = "⚡ Re-Test"; btn.style.background = ""; }, 4000);
         }
+    }
+
+    function showModal(clientName, data) {
+        document.getElementById('modal-client').innerText = clientName;
+        document.getElementById('modal-result').innerText = data.final_status;
+        document.getElementById('modal-cause').innerText = data.cause || "";
+        
+        // Colorize Result
+        const resEl = document.getElementById('modal-result');
+        if(data.final_status.includes("UP")) resEl.style.color = "var(--success)";
+        else if(data.final_status.includes("CLIENT")) resEl.style.color = "var(--warning)";
+        else resEl.style.color = "var(--danger)";
+
+        // Render Steps
+        const stepsHtml = data.steps.map(s => `
+            <div class="step-row">
+                <span>${s.step} <small style="color:#64748b">(${s.ip})</small></span>
+                <span class="step-status ${s.status.includes('UP') ? 'status-green' : 'status-red'}">${s.status}</span>
+            </div>
+        `).join('');
+        document.getElementById('modal-steps').innerHTML = stepsHtml;
+
+        document.getElementById('diagModal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('diagModal').classList.remove('open');
     }
 </script>
 
