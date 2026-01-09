@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Automation | Live NOC Monitor</title>
+    <title>NOC Monitor | Telco View</title>
     <style>
         /* --- NOC DARK THEME --- */
         :root {
             --bg-body: #0b0f19;
             --bg-panel: #151e32;
-            --bg-input: #0f1525;
+            --bg-header: #1e293b;
             --border: #2a3b55;
             --text-main: #e2e8f0;
             --text-muted: #94a3b8;
@@ -17,425 +17,235 @@
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --font-mono: 'Courier New', Courier, monospace;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: system-ui, -apple-system, sans-serif; padding-bottom: 40px; }
+        body { background-color: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; padding-bottom: 40px; }
 
-        /* --- HEADER --- */
+        /* HEADER */
         header {
-            background-color: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
-            position: sticky; top: 0; z-index: 50;
+            background-color: var(--bg-panel); border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem; position: sticky; top: 0; z-index: 50;
             display: flex; justify-content: space-between; align-items: center;
         }
         .brand { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         .brand span { color: var(--accent); }
 
-        /* --- SEARCH BAR --- */
-        .search-container { width: 100%; max-width: 600px; position: relative; }
-        .search-input {
-            width: 100%; padding: 10px 15px 10px 40px;
-            background: var(--bg-input); border: 1px solid var(--border);
-            border-radius: 6px; color: white; font-size: 0.9rem;
-            transition: border 0.2s;
-        }
-        .search-input:focus { border-color: var(--accent); }
-        .search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-muted); }
-
-        /* --- MAIN DASHBOARD --- */
+        /* CONTAINER */
         .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
-        
-        .stats-row {
-            display: flex; gap: 15px; margin-bottom: 20px;
-        }
-        .stat-card {
-            background: var(--bg-panel); border: 1px solid var(--border);
-            padding: 15px; border-radius: 6px; flex: 1;
-            display: flex; flex-direction: column;
-        }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-        .stat-value { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
 
-        /* --- LINK LIST --- */
-        .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
+        /* SEARCH */
+        .search-input {
+            width: 300px; padding: 8px 12px; background: var(--bg-body);
+            border: 1px solid var(--border); border-radius: 4px; color: white;
+        }
+
+        /* --- POP SECTIONS (New) --- */
+        .pop-section { margin-bottom: 30px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         
+        .pop-header {
+            background: var(--bg-header); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; user-select: none;
+        }
+        .pop-header:hover { background: #253346; }
+        
+        .pop-title { font-weight: bold; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 10px; }
+        .pop-meta { font-family: monospace; color: var(--accent); font-size: 0.9rem; background: rgba(59, 130, 246, 0.1); padding: 4px 8px; border-radius: 4px; }
+        .pop-count { color: var(--text-muted); font-size: 0.9rem; }
+
+        /* CLIENT GRID */
+        .client-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px; padding: 20px; background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+        }
+        .client-grid.hidden { display: none; }
+
+        /* CLIENT CARD */
         .link-card {
-            background: var(--bg-panel); border: 1px solid var(--border);
-            border-radius: 8px; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px;
-            transition: transform 0.2s, border-color 0.2s;
+            background: var(--bg-body); border: 1px solid var(--border);
+            border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px;
+            transition: transform 0.2s;
         }
-        .link-card:hover { border-color: var(--text-muted); transform: translateY(-2px); }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: start; }
-        .client-name { font-weight: bold; font-size: 1rem; }
+        .link-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+
+        .card-top { display: flex; justify-content: space-between; }
+        .client-name { font-weight: bold; font-size: 0.95rem; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-        .status-up { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+        .status-up { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .status-down { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
 
-        .card-details { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
-        .card-ip { font-family: var(--font-mono); color: var(--accent); }
+        .card-info { font-size: 0.8rem; color: var(--text-muted); display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+        .label { color: #64748b; }
+        .val-ip { font-family: monospace; color: var(--text-main); }
 
-        .btn-diagnose {
+        .btn-diag {
             margin-top: 5px; background: var(--accent); color: white; border: none;
-            padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;
-            font-size: 0.85rem; transition: background 0.2s;
+            padding: 6px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
         }
-        .btn-diagnose:hover { background: #2563eb; }
-
-        /* --- DIAGNOSIS MODAL --- */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 100; align-items: center; justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: var(--bg-body); width: 90%; max-width: 700px;
-            border: 1px solid var(--border); border-radius: 12px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-        }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 2rem; }
-
-        /* Logic Steps Visualization */
-        .logic-chain { margin-top: 20px; position: relative; padding-left: 20px; border-left: 2px solid var(--border); }
-        .step { position: relative; margin-bottom: 25px; padding-left: 15px; }
-        .step::before {
-            content: ''; position: absolute; left: -26px; top: 0; width: 14px; height: 14px;
-            background: var(--bg-body); border: 2px solid var(--text-muted); border-radius: 50%;
-            transition: all 0.3s;
-        }
-        .step.active::before { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-        .step.success::before { border-color: var(--success); background: var(--success); }
-        .step.fail::before { border-color: var(--danger); background: var(--danger); }
-        
-        .step-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 2px; }
-        .step-detail { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
-
-        .step-ip { color: var(--accent); margin-left: 5px; font-weight: bold; }
-        .step-status { float: right; font-weight: bold; }
-        .status-UP { color: var(--success); }
-        .status-DOWN { color: var(--danger); }
+        .btn-diag:hover { background: #2563eb; }
 
     </style>
 </head>
 <body>
 
-<!-- Header -->
 <header>
-    <div class="brand">
-        <span>RF</span> AUTOMATION <span style="font-size:0.8rem; color:#64748b;">(LIVE - LOCAL)</span>
-    </div>
-    <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Search Client, BTS, POP, or IP Address...">
-    </div>
-    <div id="system-status" style="font-size:0.8rem; color:var(--success)">● Backend Online</div>
+    <div class="brand"><span>RF</span> NOC VIEW</div>
+    <input type="text" id="searchInput" class="search-input" placeholder="Filter Clients or IPs...">
+    <div style="color:var(--success); font-size:0.8rem;">● Live System</div>
 </header>
 
-<!-- Dashboard -->
-<div class="container">
-    
-    <!-- Stats -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <span class="stat-label">Total Inventory</span>
-            <span class="stat-value" id="stat-total">0</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">Links Loaded</span>
-            <span class="stat-value" id="stat-loaded">0</span>
-        </div>
-    </div>
-
-    <!-- Results Grid -->
-    <div id="results-grid" class="link-grid">
-        <!-- Initial Loading State -->
-        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">
-            Connecting to Backend...
-        </div>
-    </div>
-</div>
-
-<!-- Diagnosis Modal -->
-<div class="modal-overlay" id="modal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <div>
-                <h3 id="m-title" style="margin:0;">Diagnosing Link</h3>
-                <span id="m-subtitle" style="font-size:0.8rem; color:var(--text-muted);"></span>
-            </div>
-            <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div style="background:var(--bg-panel); padding:15px; border-radius:6px; margin-bottom:20px; text-align:center;">
-                <div style="font-size:0.8rem; color:var(--text-muted);">FINAL STATUS</div>
-                <div id="m-final-result" style="font-size:1.2rem; font-weight:bold; margin-top:5px;">Processing...</div>
-            </div>
-
-            <div class="logic-chain" id="logic-steps">
-                <!-- Steps injected here -->
-            </div>
-        </div>
-    </div>
+<div class="container" id="main-container">
+    <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading Inventory...</div>
 </div>
 
 <script>
-    /**
-     * CONFIGURATION
-     */
-    // LOCAL BACKEND IP
-    const API_BASE = 'http://192.168.0.104:8000';
-    
-    // STATE
-    let inventory = []; 
-    let isScanning = false;
+    const API_BASE = 'http://192.168.0.104:8000'; // Change to localhost:8000 if testing on same PC
+    let rawData = {}; // Store full data
 
-    // DOM ELEMENTS
-    const els = {
-        search: document.getElementById('searchInput'),
-        grid: document.getElementById('results-grid'),
-        statTotal: document.getElementById('stat-total'),
-        statLoaded: document.getElementById('stat-loaded'),
-        modal: document.getElementById('modal'),
-        mTitle: document.getElementById('m-title'),
-        mSubtitle: document.getElementById('m-subtitle'),
-        mResult: document.getElementById('m-final-result'),
-        steps: document.getElementById('logic-steps')
-    };
+    document.addEventListener('DOMContentLoaded', fetchInventory);
 
-    /**
-     * INITIALIZATION
-     */
-    document.addEventListener('DOMContentLoaded', async () => {
-        await fetchInventory();
-        
-        // Search Listener
-        els.search.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = inventory.filter(item => 
-                item.Client_Name.toLowerCase().includes(term) ||
-                item.POP_Name.toLowerCase().includes(term) ||
-                item.BTS_Name.toLowerCase().includes(term) ||
-                item.Client_IP.includes(term) ||
-                item.Location.toLowerCase().includes(term)
+    // Search Functionality
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const container = document.getElementById('main-container');
+        container.innerHTML = ''; // Clear current
+
+        // Iterate over all POPs
+        for (const [popName, data] of Object.entries(rawData)) {
+            // Filter clients inside this POP
+            const matchingClients = data.clients.filter(c => 
+                c.Client_Name.toLowerCase().includes(term) || 
+                c.Client_IP.includes(term)
             );
-            renderGrid(filtered);
-        });
+
+            // If POP matches OR any client matches, render the section
+            if (popName.toLowerCase().includes(term) || matchingClients.length > 0) {
+                // If filtering, show only matching clients. If clearing search, show all.
+                const clientsToShow = term ? matchingClients : data.clients;
+                if(clientsToShow.length > 0) {
+                    renderPopSection(popName, data.loopback_ip, clientsToShow, true);
+                }
+            }
+        }
     });
 
-    /**
-     * DATA FETCHING
-     */
     async function fetchInventory() {
         try {
-            // Fetching Hierarchical Data (BTS/POP -> Clients)
-            const response = await fetch(`${API_BASE}/api/inventory`);
+            const res = await fetch(`${API_BASE}/api/inventory`);
+            if (!res.ok) throw new Error("Backend Error");
             
-            if (!response.ok) {
-                throw new Error(`HTTP Error: ${response.status}`);
-            }
-
-            const groupedData = await response.json();
+            rawData = await res.json();
+            renderAll(rawData);
             
-            // Flatten hierarchy to a single array for the UI Grid
-            inventory = [];
-            for (const [siteName, clients] of Object.entries(groupedData)) {
-                clients.forEach(link => {
-                    // Attach the site name to the link object for easy access
-                    link.Site_Name = siteName; 
-                    inventory.push(link);
-                });
-            }
-
-            els.statTotal.innerText = inventory.length;
-            els.statLoaded.innerText = inventory.length;
-            
-            // Show all initially
-            renderGrid(inventory.slice(0, 100)); 
-            
-            showToast('Inventory Loaded Successfully', 'success');
         } catch (err) {
-            let msg = "Failed to load data.";
-            
-            if (err.message.includes("Failed to fetch") && window.location.protocol === "https:") {
-                msg = "Mixed Content Error! Browser blocked HTTP connection. Please allow insecure content or open via Local Server.";
-            } else if (err.message.includes("Failed to fetch")) {
-                msg = "Backend Offline. Run 'setup_network.bat' and 'run_server.bat'.";
-            }
-
-            els.grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:var(--danger);">${msg}</div>`;
-            console.error(err);
+            document.getElementById('main-container').innerHTML = 
+                `<div style="color:var(--danger); text-align:center;">
+                    <h3>Backend Offline</h3>
+                    <p>Ensure run_server.bat is running.</p>
+                    <p>${err.message}</p>
+                 </div>`;
         }
     }
 
-    function renderGrid(links) {
-        if (links.length === 0) {
-            els.grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:var(--text-muted);">No links found.</div>`;
-            return;
-        }
+    function renderAll(data) {
+        const container = document.getElementById('main-container');
+        container.innerHTML = '';
+        
+        // Sort keys (POPs) alphabetically
+        const popNames = Object.keys(data).sort();
+        
+        popNames.forEach(pop => {
+            const info = data[pop];
+            renderPopSection(pop, info.loopback_ip, info.clients);
+        });
+    }
 
-        els.grid.innerHTML = links.map(link => {
-            return `
-            <div class="link-card">
-                <div class="card-header">
-                    <div class="client-name">${link.Client_Name}</div>
-                    <div class="status-dot" id="dot-${link.Client_IP}"></div>
+    function renderPopSection(popName, loopback, clients, forceExpand = false) {
+        const container = document.getElementById('main-container');
+        
+        // Create Section HTML
+        const section = document.createElement('div');
+        section.className = 'pop-section';
+        
+        const gridId = `grid-${popName.replace(/\s+/g, '-')}`;
+        
+        section.innerHTML = `
+            <div class="pop-header" onclick="toggleGrid('${gridId}')">
+                <div class="pop-title">
+                    <span>🏢 ${popName}</span>
+                    ${loopback !== 'N/A' ? `<span class="pop-meta">LB: ${loopback}</span>` : ''}
                 </div>
-                <div class="card-details">
-                    <div>📍 ${link.Location}</div>
-                    <div>📡 BTS: ${link.BTS_Name}</div>
-                    <div>🏢 POP: ${link.Site_Name}</div>
-                    <div class="card-ip">${link.Client_IP}</div>
-                </div>
-                <!-- Pass Client_Name to diagnosis, not Link_ID -->
-                <button class="btn-diagnose" onclick="startDiagnosis('${link.Client_Name}')">⚡ Run Diagnosis</button>
+                <div class="pop-count">${clients.length} Clients ▾</div>
             </div>
-            `;
-        }).join('');
+            <div id="${gridId}" class="client-grid ${forceExpand ? '' : 'hidden'}">
+                ${clients.map(client => `
+                    <div class="link-card">
+                        <div class="card-top">
+                            <div class="client-name">${client.Client_Name}</div>
+                            <div class="status-dot" id="dot-${client.Client_IP}"></div>
+                        </div>
+                        <div class="card-info">
+                            <div class="label">Client IP:</div>
+                            <div class="val-ip">${client.Client_IP}</div>
+                            <div class="label">BTS:</div>
+                            <div>${client.BTS_Name}</div>
+                            <div class="label">VLAN/Loc:</div>
+                            <div>${client.Location}</div>
+                        </div>
+                        <button class="btn-diag" onclick="runDiag('${client.Client_Name}', '${client.Client_IP}')">
+                            ⚡ Check Status
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        container.appendChild(section);
     }
 
-    /**
-     * SMART DIAGNOSIS ENGINE
-     * Sends Client Name to Backend, Parses JSON Response
-     */
-    async function startDiagnosis(clientName) {
-        if (isScanning) {
-            alert("A scan is already in progress. Please wait.");
-            return;
-        }
-        isScanning = true;
+    function toggleGrid(id) {
+        document.getElementById(id).classList.toggle('hidden');
+    }
 
-        const link = inventory.find(l => l.Client_Name === clientName);
-        if (!link) return;
-
-        // Open Modal
-        els.modal.classList.add('open');
-        els.mTitle.innerText = `Link: ${link.Client_Name}`;
-        els.mSubtitle.innerText = `POP: ${link.Site_Name} | BTS: ${link.BTS_Name}`;
-        els.mResult.innerText = "Scanning Network...";
-        els.mResult.style.color = "var(--text-main)";
-        els.steps.innerHTML = '';
+    async function runDiag(name, ip) {
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ Scanning...";
+        btn.disabled = true;
 
         try {
-            // Call the Backend Diagnosis Endpoint
-            const response = await fetch(`${API_BASE}/api/diagnose?search_query=${encodeURIComponent(clientName)}`, {
-                method: 'POST'
+            const res = await fetch(`${API_BASE}/api/diagnose`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, ip: ip })
             });
-
-            if (!response.ok) throw new Error('Backend Scan Failed');
-
-            const data = await response.json();
+            const data = await res.json();
             
-            renderResults(data);
-            
-            // Update Link Card Dot
-            if (data.final_status.includes("LINK UP")) {
-                updateDot(link.Client_IP, 'up');
+            // Update UI based on result
+            if(data.final_status.includes("UP")) {
+                document.getElementById(`dot-${ip}`).className = "status-dot status-up";
+                btn.style.background = "var(--success)";
+                btn.innerText = "LINK UP";
             } else {
-                updateDot(link.Client_IP, 'down');
+                document.getElementById(`dot-${ip}`).className = "status-dot status-down";
+                btn.style.background = "var(--danger)";
+                btn.innerText = "LINK DOWN";
             }
-
-        } catch (err) {
-            addStep("System Error", err.message, 'fail');
-            showToast(err.message, 'danger');
+            
+        } catch (e) {
+            alert("Error: " + e.message);
+            btn.innerText = "Error";
         } finally {
-            isScanning = false;
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = originalText;
+                btn.style.background = "";
+            }, 5000);
         }
-    }
-
-    function renderResults(data) {
-        // 1. Final Status
-        els.mResult.innerText = data.final_status;
-        
-        if (data.final_status.includes("LINK UP")) {
-            els.mResult.style.color = "var(--success)";
-        } else if (data.final_status.includes("CRITICAL")) {
-            els.mResult.style.color = "var(--danger)";
-        } else {
-            els.mResult.style.color = "var(--warning)";
-        }
-
-        // 2. Step 1: Parallel Check (Client / Base / Gateway)
-        if (data.parallel_check && data.parallel_check.length > 0) {
-            data.parallel_check.forEach(step => {
-                const statusClass = step.status === 'UP' ? 'success' : 'fail';
-                const cssClass = step.status === 'UP' ? 'status-UP' : 'status-DOWN';
-                
-                addStep(
-                    `Step 1: ${step.level.toUpperCase()}`, 
-                    `IP: <span class="step-ip">${step.ip}</span> <span class="step-status ${cssClass}">${step.status}</span> Loss: ${step.packet_loss}`, 
-                    statusClass
-                );
-            });
-        }
-
-        // 3. Step 2: BTS/POP Scan
-        if (data.bts_pop_scan && data.bts_pop_scan.length > 0) {
-            // Determine Logic Message based on Final Status
-            let logicText = "Scanning Base IPs...";
-            if (data.final_status.includes("Isolated")) logicText = "Isolated Base Sector Failure detected.";
-            if (data.final_status.includes("Router Down")) logicText = "All Base Sectors DOWN.";
-            
-            addStep("Step 2: BTS / POP Mass Scan", logicText, data.root_cause_level === 'base' ? 'fail' : 'fail');
-
-            // Show scan details
-            data.bts_pop_scan.forEach(base => {
-                const cssClass = base.status === 'UP' ? 'status-UP' : 'status-DOWN';
-                addStep(
-                    `   ➔ Base Check`, 
-                    `IP: <span class="step-ip">${base.base_ip}</span> <span class="step-status ${cssClass}">${base.status}</span>`, 
-                    base.status === 'UP' ? 'success' : 'fail'
-                );
-            });
-        }
-
-        // 4. Step 3: Loopback
-        if (data.loopback) {
-            const lbStatus = data.loopback.status === 'UP' ? 'success' : 'fail';
-            const cssClass = data.loopback.status === 'UP' ? 'status-UP' : 'status-DOWN';
-            
-            addStep(
-                "Step 3: Core Router (Loopback)", 
-                `IP: <span class="step-ip">${data.loopback.ip}</span> <span class="step-status ${cssClass}">${data.loopback.status}</span>`, 
-                lbStatus
-            );
-        }
-    }
-
-    function addStep(title, detail, status) {
-        const div = document.createElement('div');
-        div.className = `step ${status}`;
-        div.innerHTML = `<div class="step-title">${title}</div><div class="step-detail">${detail}</div>`;
-        els.steps.appendChild(div);
-        return div;
-    }
-
-    function updateDot(ip, status) {
-        const dot = document.getElementById(`dot-${ip}`);
-        if (dot) {
-            dot.className = `status-dot status-${status}`;
-        }
-    }
-
-    function closeModal() {
-        els.modal.classList.remove('open');
-    }
-
-    function showToast(msg, type='info') {
-        const div = document.createElement('div');
-        div.style.cssText = `position:fixed; bottom:20px; right:20px; background:var(--bg-panel); color:white; padding:10px 20px; border:1px solid var(--border); border-radius:6px; z-index:999;`;
-        div.innerText = msg;
-        if(type === 'success') div.style.borderColor = 'var(--success)';
-        if(type === 'danger') div.style.borderColor = 'var(--danger)';
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
     }
 </script>
+
 </body>
 </html>
