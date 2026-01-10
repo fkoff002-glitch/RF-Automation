@@ -46,7 +46,7 @@ def ping_target(name, ip):
     if not ip or ip in ["N/A", ""]: 
         return {"target": name, "ip": "N/A", "status": "SKIPPED", "loss": "N/A", "latency": "N/A"}
     
-    cmd = ["fping", "-c", "10", "-t", "500", "-p", "25", "-q", ip]
+    cmd = ["fping", "-c", "5", "-t", "500", "-p", "25", "-q", ip]
     try:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         loss = "100%"
