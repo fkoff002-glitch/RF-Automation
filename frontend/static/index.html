@@ -8,36 +8,57 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Extra styles for the Diagnostic Features */
+        /* --- NEW STYLES FOR DIAGNOSTICS --- */
+        /* Amber Button for Diagnostics */
         .action-btn.diag {
-            background: #f59e0b; /* Amber/Yellow */
+            background: #f59e0b; 
             color: #fff;
         }
         .action-btn.diag:hover {
             background: #d97706;
-            transform: scale(1.05);
+            transform: translateY(-2px);
         }
-        .diag-status {
-            font-size: 1.5rem;
+
+        /* Diagnostic Modal Specifics */
+        .diag-header {
+            background: #1e293b; /* Dark Blue/Grey */
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .diag-body {
+            padding: 30px;
+            text-align: center;
+        }
+        .status-badge {
+            font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin: 15px 0;
+            display: block;
         }
+        .status-UP { color: #10b981; }      /* Green */
+        .status-DOWN { color: #ef4444; }    /* Red */
+        .status-UNSTABLE { color: #f59e0b; } /* Orange */
+
         .diag-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 0.9rem;
         }
         .diag-table th {
-            background: #f1f5f9;
-            color: #334155;
-            padding: 8px;
-            text-align: left;
-            font-size: 0.85rem;
+            background: #f8fafc;
+            padding: 10px;
+            color: #64748b;
         }
         .diag-table td {
             border-bottom: 1px solid #e2e8f0;
-            padding: 8px;
-            color: #333;
+            padding: 10px;
+            color: #334155;
         }
     </style>
 </head>
@@ -101,7 +122,7 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="9" style="text-align:center; padding:20px;">Loading Data from Server...</td></tr>
+                    <tr><td colspan="9" style="text-align:center; padding:20px;">Connecting to Python Backend...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -175,16 +196,15 @@
     </div>
 
     <div id="diagModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header" style="background: #1e293b;">
-                <h2><i class="fas fa-heartbeat"></i> Link Status</h2>
-                <span class="close" onclick="document.getElementById('diagModal').style.display='none'">&times;</span>
+        <div class="modal-content" style="max-width: 550px; overflow: hidden;">
+            <div class="diag-header">
+                <h2 style="margin:0; font-size:1.5rem;"><i class="fas fa-heartbeat"></i> Live Diagnosis</h2>
+                <span class="close" onclick="document.getElementById('diagModal').style.display='none'" style="color:white;">&times;</span>
             </div>
-            <div class="modal-body" id="diagContent">
-                <div style="text-align:center; padding:30px;">
-                    <i class="fas fa-spinner fa-spin fa-3x" style="color:#667eea"></i>
-                    <p style="margin-top:15px; color:#666;">Scanning RF Environment...</p>
-                </div>
+            <div class="modal-body diag-body" id="diagContent">
+                <i class="fas fa-spinner fa-spin fa-3x" style="color:#667eea"></i>
+                <p style="margin-top:20px; color:#666;">Scanning Network Path...</p>
+                <small style="color:#999;">Running 20-packet stress test</small>
             </div>
         </div>
     </div>
