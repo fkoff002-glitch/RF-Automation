@@ -41,12 +41,12 @@ def load_db():
 def save_db(data):
     with open(DB_FILE, 'w') as f: json.dump(data, f, indent=4)
 
-# --- DIAGNOSTIC TOOLS ---
+# --- DIAGNOSTICS ---
 def ping_target(name, ip):
     if not ip or ip in ["N/A", ""]: 
         return {"target": name, "ip": "N/A", "status": "SKIPPED", "loss": "N/A", "latency": "N/A"}
     
-    cmd = ["fping", "-c", "5", "-t", "500", "-p", "25", "-q", ip] # 5 packets for speed
+    cmd = ["fping", "-c", "10", "-t", "500", "-p", "25", "-q", ip]
     try:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         loss = "100%"
@@ -67,7 +67,6 @@ def get_snmp_value(ip, oid):
     except: return None
 
 def get_signal_sample(ip):
-    # Mimosa OIDs
     oid_1 = "1.3.6.1.4.1.43356.2.1.2.6.1.1.3.1"
     oid_2 = "1.3.6.1.4.1.43356.2.1.2.6.1.1.3.2"
     r1 = get_snmp_value(ip, oid_1)
@@ -88,7 +87,6 @@ def check_radio_health(name, ip):
         result['data'] = {"rssi": "N/A", "stability": "Offline", "lan_speed": "N/A"}
         return result 
 
-    # SNMP Checks
     samples = []
     for _ in range(3):
         val = get_signal_sample(ip)
@@ -134,10 +132,8 @@ def update_inventory(data: List[dict]):
 @app.post("/api/diagnose")
 def run_diagnosis(item: dict = Body(...)):
     ip = item.get("ip")
-    # Load DB to find relations
     db = load_db()
     record = next((item for item in db if item["Client_IP"] == ip), None)
-    
     base_ip = record.get("Base_IP", "N/A") if record else "N/A"
     gateway_ip = "N/A"
     try:
@@ -152,7 +148,6 @@ def run_diagnosis(item: dict = Body(...)):
         for f in concurrent.futures.as_completed([f1, f2, f3]):
             results.append(f.result())
 
-    # Sorting
     order = {"Client Radio": 1, "Base Radio": 2, "Gateway (GW)": 3}
     results.sort(key=lambda x: order.get(x["target"], 4))
 
@@ -166,16 +161,16 @@ def run_diagnosis(item: dict = Body(...)):
     if client['status'] == "UP":
         if "UNSTABLE" in client['data'].get('stability', ''):
             final_status = "UNSTABLE ⚠️"
-            cause = f"Signal Fluctuating: {client['data']['rssi']}"
+            cause = f"Fluctuating Signal"
         else:
             final_status = "LINK UP 🟢"
-            cause = "Optimization Optimal."
+            cause = "Link Optimal."
     elif base['status'] == "UP":
         final_status = "CLIENT DOWN 🔴"
-        cause = "Base is UP. Client Unreachable."
+        cause = "Base UP. Client Unreachable."
     elif gw['status'] == "UP":
         final_status = "SECTOR DOWN 🔴"
-        cause = "Gateway UP. Base Radio DOWN."
+        cause = "Gateway UP. Base DOWN."
     else:
         final_status = "POP ISSUE ⚫"
         cause = "Gateway Unreachable."
