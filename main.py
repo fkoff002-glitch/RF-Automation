@@ -7,10 +7,10 @@ import ipaddress
 import concurrent.futures
 import re
 import time
-from fastapi import FastAPI, Body, HTTPException
+from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles # To serve your UI
-from typing import List, Optional
+from fastapi.staticfiles import StaticFiles
+from typing import List
 
 # --- CONFIGURATION ---
 DB_FILE = "inventory.json"
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# 1. Allow CORS (So your UI can talk to Python)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,7 +32,6 @@ app.add_middleware(
 # --- DATABASE HELPERS ---
 def load_db():
     if not os.path.exists(DB_FILE):
-        # Create empty db if missing
         with open(DB_FILE, 'w') as f: json.dump([], f)
         return []
     try:
@@ -43,13 +41,12 @@ def load_db():
 def save_db(data):
     with open(DB_FILE, 'w') as f: json.dump(data, f, indent=4)
 
-# --- SYSTEM UTILS (Ping/SNMP) ---
+# --- DIAGNOSTIC TOOLS ---
 def ping_target(name, ip):
     if not ip or ip in ["N/A", ""]: 
         return {"target": name, "ip": "N/A", "status": "SKIPPED", "loss": "N/A", "latency": "N/A"}
     
-    # 20 Packets for precision
-    cmd = ["fping", "-c", "20", "-t", "500", "-p", "25", "-q", ip]
+    cmd = ["fping", "-c", "5", "-t", "500", "-p", "25", "-q", ip] # 5 packets for speed
     try:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         loss = "100%"
@@ -59,7 +56,7 @@ def ping_target(name, ip):
         status = "UP" if res.returncode == 0 else "DOWN"
         return {"target": name, "ip": ip, "status": status, "loss": loss}
     except:
-        return {"target": name, "ip": ip, "status": "ERROR", "loss": "?"}
+        return {"target": name, "ip": ip, "status": "ERROR", "loss": "?", "latency": "?"}
 
 def get_snmp_value(ip, oid):
     cmd = ["snmpget", "-v", "2c", "-c", SNMP_COMMUNITY, "-O", "qv", ip, oid]
@@ -96,7 +93,7 @@ def check_radio_health(name, ip):
     for _ in range(3):
         val = get_signal_sample(ip)
         if val: samples.append(val)
-        time.sleep(0.3)
+        time.sleep(0.2)
 
     final_rssi = "N/A"
     stability = "Unknown"
@@ -124,33 +121,24 @@ def check_radio_health(name, ip):
     result['data'] = {"rssi": final_rssi, "stability": stability, "lan_speed": final_speed}
     return result
 
-# --- API ENDPOINTS ---
-
-# 1. READ INVENTORY (Frontend calls this instead of localStorage)
+# --- API ROUTES ---
 @app.get("/api/inventory")
 def get_inventory():
     return load_db()
 
-# 2. SAVE INVENTORY (Frontend sends new data here)
 @app.post("/api/inventory")
 def update_inventory(data: List[dict]):
     save_db(data)
     return {"status": "success", "count": len(data)}
 
-# 3. DIAGNOSIS (The Smart NOC Logic)
 @app.post("/api/diagnose")
 def run_diagnosis(item: dict = Body(...)):
     ip = item.get("ip")
-    name = item.get("name")
-    
-    # Load from JSON DB
+    # Load DB to find relations
     db = load_db()
-    # Find client in DB
     record = next((item for item in db if item["Client_IP"] == ip), None)
     
-    base_ip = "N/A"
-    if record: base_ip = record.get("Base_IP", "N/A")
-    
+    base_ip = record.get("Base_IP", "N/A") if record else "N/A"
     gateway_ip = "N/A"
     try:
         if base_ip != "N/A": gateway_ip = str(ipaddress.IPv4Address(base_ip) - 1)
@@ -164,7 +152,7 @@ def run_diagnosis(item: dict = Body(...)):
         for f in concurrent.futures.as_completed([f1, f2, f3]):
             results.append(f.result())
 
-    # Sorting & Logic
+    # Sorting
     order = {"Client Radio": 1, "Base Radio": 2, "Gateway (GW)": 3}
     results.sort(key=lambda x: order.get(x["target"], 4))
 
@@ -178,7 +166,7 @@ def run_diagnosis(item: dict = Body(...)):
     if client['status'] == "UP":
         if "UNSTABLE" in client['data'].get('stability', ''):
             final_status = "UNSTABLE ⚠️"
-            cause = f"Client Signal Fluctuating"
+            cause = f"Signal Fluctuating: {client['data']['rssi']}"
         else:
             final_status = "LINK UP 🟢"
             cause = "Optimization Optimal."
@@ -194,10 +182,8 @@ def run_diagnosis(item: dict = Body(...)):
 
     return {"final_status": final_status, "cause": cause, "steps": results, "topology": {"client": client, "base": base, "gw": gw}}
 
-# 4. SERVE THE UI (This makes the Python script host your website)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    # Now running on 8000. Open http://localhost:8000
     uvicorn.run(app, host="0.0.0.0", port=8000)
