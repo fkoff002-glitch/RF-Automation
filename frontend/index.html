@@ -3,456 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF NOC | Live Path Monitor</title>
+    <title>RF SMART NOC</title>
     <style>
-        /* --- NOC DARK THEME --- */
-        :root {
-            --bg-body: #0b0f19; 
-            --bg-panel: #151e32; 
-            --bg-header: #1e293b;
-            --border: #2a3b55; 
-            --text-main: #e2e8f0; 
-            --text-muted: #94a3b8;
-            --accent: #3b82f6; 
-            --success: #10b981; 
-            --danger: #ef4444; 
-            --warning: #f59e0b;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: system-ui, -apple-system, sans-serif; padding-bottom: 50px; }
+        :root { --bg-body: #0b0f19; --bg-panel: #151e32; --bg-header: #1e293b; --border: #2a3b55; --text-main: #e2e8f0; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; padding-bottom: 50px; }
 
         /* HEADER */
-        header {
-            background-color: var(--bg-panel); border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem; position: sticky; top: 0; z-index: 100;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .brand { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-        .brand span { color: var(--accent); }
-        .live-badge { font-size: 0.75rem; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2); }
+        header { background: var(--bg-panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .brand span { color: var(--accent); font-weight: bold; }
+        .search-input { background: var(--bg-body); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; width: 350px; }
 
-        /* SEARCH */
-        .search-container { position: relative; width: 400px; }
-        .search-input {
-            width: 100%; padding: 10px 15px; background: var(--bg-body);
-            border: 1px solid var(--border); border-radius: 6px; color: white;
-            font-size: 0.9rem; transition: border-color 0.2s;
-        }
-        .search-input:focus { border-color: var(--accent); }
-
-        /* MAIN LAYOUT */
+        /* GRID */
         .container { max-width: 1600px; margin: 25px auto; padding: 0 20px; }
-
-        /* POP SECTIONS */
-        .pop-section { 
-            margin-bottom: 25px; border: 1px solid var(--border); 
-            border-radius: 8px; overflow: hidden; background: var(--bg-panel);
-        }
-        
-        .pop-header {
-            background: var(--bg-header); padding: 15px 25px;
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; user-select: none; border-bottom: 1px solid transparent;
-            transition: background 0.2s;
-        }
+        .pop-section { margin-bottom: 25px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); overflow: hidden; }
+        .pop-header { padding: 15px 25px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; }
         .pop-header:hover { background: #253346; }
-        .pop-title { font-weight: bold; font-size: 1.05rem; color: white; display: flex; align-items: center; gap: 12px; }
-        .pop-badge { 
-            font-family: monospace; color: var(--accent); font-size: 0.85rem; 
-            background: rgba(59, 130, 246, 0.15); padding: 3px 8px; border-radius: 4px; 
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        /* CLIENT GRID */
-        .client-grid {
-            display: none; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px; padding: 20px; background: #0f1525;
-        }
+        .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; padding: 20px; }
         .client-grid.show { display: grid; }
 
-        /* CLIENT CARD */
-        .link-card {
-            background: var(--bg-panel); border: 1px solid var(--border);
-            border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 12px;
-            transition: transform 0.2s, border-color 0.2s; position: relative;
-        }
-        .link-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
+        /* CARD */
+        .link-card { background: var(--bg-panel); border: 1px solid var(--border); padding: 20px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.2s; }
+        .link-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+        .card-top { display: flex; justify-content: space-between; font-weight: bold; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #334155; margin-top: 5px;}
+        .status-up { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .status-down { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+        .val-ip { font-family: monospace; color: #cbd5e1; }
 
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
-        .client-name { font-weight: bold; font-size: 1rem; color: #fff; line-height: 1.3; margin-right: 10px; }
-        
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #334155; flex-shrink: 0; margin-top: 4px; }
-        .status-up { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .status-down { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-        .card-info { font-size: 0.85rem; color: var(--text-muted); display: grid; gap: 4px; }
-        .val-ip { font-family: monospace; color: var(--text-main); letter-spacing: 0.5px; }
-
-        /* --- DIAGNOSIS BUTTON (The Magic Part) --- */
-        .btn-diag {
-            margin-top: 5px; background: var(--accent); color: white; border: none;
-            padding: 0; /* Padding handled by content */
-            border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
-            transition: all 0.2s; min-height: 42px; width: 100%;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
+        /* BUTTON */
+        .btn-diag { margin-top: 5px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; min-height: 45px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; transition: background 0.2s; width: 100%; padding: 0; }
         .btn-diag:hover { background: #2563eb; }
-        .btn-diag:disabled { cursor: wait; opacity: 1; }
+        .btn-diag:disabled { cursor: wait; }
 
-        /* Scanning Animation Box inside Button */
-        .scan-box { 
-            display: flex; flex-direction: column; width: 100%; 
-            padding: 8px 12px; font-size: 0.75rem; font-family: monospace; 
-            text-align: left; gap: 3px;
-        }
-        .scan-header { font-weight: bold; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
-        .scan-row { display: flex; justify-content: space-between; width: 100%; color: rgba(255,255,255,0.8); }
-        
-        .spinner {
-            width: 10px; height: 10px; border: 2px solid #fff; 
-            border-top-color: transparent; border-radius: 50%; 
-            animation: spin 1s linear infinite;
-        }
+        /* SCAN BOX */
+        .scan-box { display: flex; flex-direction: column; width: 100%; padding: 10px 15px; font-size: 0.75rem; font-family: monospace; gap: 4px; text-align: left; }
+        .scan-header { font-weight: bold; margin-bottom: 2px; display: flex; gap: 8px; align-items: center; }
+        .scan-row { display: flex; justify-content: space-between; color: rgba(255,255,255,0.8); }
+        .spinner { width: 12px; height: 12px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to {transform: rotate(360deg);} }
 
-        /* --- MODAL REPORT --- */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 1000; align-items: center; justify-content: center;
-            backdrop-filter: blur(4px);
-        }
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: var(--bg-panel); width: 600px; max-width: 95%;
-            border: 1px solid var(--border); border-radius: 12px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); padding: 30px;
-        }
+        .modal-box { background: var(--bg-panel); width: 700px; max-width: 95%; border: 1px solid var(--border); border-radius: 12px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         
-        .result-row { 
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); 
-        }
-        .res-target { font-weight: bold; font-size: 0.95rem; }
-        .res-ip { font-family: monospace; color: var(--text-muted); font-size: 0.85rem; }
-        
-        .res-loss { font-weight: bold; font-family: monospace; }
-        .loss-good { color: var(--success); }
-        .loss-warn { color: var(--warning); }
-        .loss-bad { color: var(--danger); }
-
-        .res-status { 
-            font-weight: bold; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; text-transform: uppercase; 
-        }
-        .st-UP { color: #10b981; background: rgba(16, 185, 129, 0.15); }
-        .st-DOWN { color: #ef4444; background: rgba(239, 68, 68, 0.15); }
-        .st-SKIPPED { color: var(--text-muted); }
+        /* RESULT TABLE */
+        .result-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); align-items: center; font-size: 0.9rem; }
+        .res-label { font-weight: bold; }
+        .res-sub { font-size: 0.8rem; color: #94a3b8; font-family: monospace; }
+        .res-val { font-family: monospace; text-align: center; color: var(--accent); }
+        .res-status { font-weight: bold; padding: 4px 8px; border-radius: 4px; text-align: center; font-size: 0.8rem; }
+        .st-UP { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .st-DOWN { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand">
-        <span>RF</span> SMART NOC <div class="live-badge">● LIVE SYSTEM</div>
-    </div>
-    <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search Client, IP, BTS or POP...">
-    </div>
+    <div class="brand"><span>RF</span> SMART NOC</div>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search Client, IP, BTS...">
 </header>
 
 <div class="container" id="main-container">
-    <div style="text-align:center; padding:60px; color:var(--text-muted);">
-        <div class="spinner" style="width:30px; height:30px; border-width:3px; border-color:var(--accent); border-top-color:transparent; margin: 0 auto 20px;"></div>
-        <h2>Loading Inventory...</h2>
-    </div>
+    <div style="text-align:center; padding:60px; color:#64748b;">Loading System...</div>
 </div>
 
 <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
-        <div style="margin-bottom: 20px;">
-            <h3 id="m-client" style="color:var(--accent); margin-bottom: 5px; font-size:1.2rem;">Client Name</h3>
-            <div style="font-size:0.9rem; color:var(--text-muted);">Full Path Diagnostics Report</div>
+        <h3 id="m-client" style="color:var(--accent); margin-bottom: 5px; font-size: 1.3rem;">--</h3>
+        <div style="font-size:0.9rem; color:#94a3b8; margin-bottom: 25px;">Detailed Path Analysis</div>
+        
+        <div class="result-row" style="border-bottom: 2px solid #334155; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
+            <div>Target</div>
+            <div style="text-align:center">Loss</div>
+            <div style="text-align:center">Signal</div>
+            <div style="text-align:center">LAN</div>
+            <div style="text-align:center">Status</div>
         </div>
+        <div id="m-steps"></div>
 
-        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0 20px; margin-bottom: 25px;">
-            <div id="m-steps">
-                </div>
+        <div style="background: var(--bg-body); padding: 20px; border-radius: 8px; text-align: center; margin-top: 25px; border: 1px solid var(--border);">
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">ROOT CAUSE</div>
+            <div id="m-final" style="font-size:1.4rem; font-weight:bold;">--</div>
+            <div id="m-cause" style="color:#cbd5e1; margin-top:5px;">--</div>
         </div>
-
-        <div style="background: var(--bg-body); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 5px;">ROOT CAUSE ANALYSIS</div>
-            <div id="m-final" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;">--</div>
-            <div id="m-cause" style="font-size: 0.95rem; color: #cbd5e1;">--</div>
-        </div>
-
-        <button onclick="closeModal()" style="width:100%; margin-top:20px; padding:12px; background:#334155; border:none; color:white; border-radius:6px; cursor:pointer; font-weight:bold; transition:background 0.2s;">
-            Close Report
-        </button>
+        <button onclick="closeModal()" style="width:100%; margin-top:20px; padding:12px; background:#334155; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Close Report</button>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
-    const API_BASE = 'http://192.168.0.104:8000'; // Change if needed
-    let rawData = {}; 
+    const API_BASE = 'http://192.168.0.104:8000';
+    let rawData = {};
 
-    // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', fetchInventory);
 
-    // --- SEARCH LOGIC ---
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const container = document.getElementById('main-container');
-        container.innerHTML = ''; 
-
-        if (!term) {
-            renderAll(rawData); 
-            return;
-        }
-
-        let foundAny = false;
-        const sortedPops = Object.keys(rawData).sort();
-
-        sortedPops.forEach(popName => {
-            const data = rawData[popName];
-            
-            // Search match across multiple fields
-            const matchingClients = data.clients.filter(c => 
-                c.Client_Name.toLowerCase().includes(term) || 
-                c.Client_IP.includes(term) ||
-                (c.BTS_Name && c.BTS_Name.toLowerCase().includes(term)) ||
-                (c.Location && c.Location.toLowerCase().includes(term))
+        document.getElementById('main-container').innerHTML = '';
+        if (!term) { renderAll(rawData); return; }
+        Object.keys(rawData).forEach(pop => {
+            const matches = rawData[pop].clients.filter(c => 
+                c.Client_Name.toLowerCase().includes(term) || c.Client_IP.includes(term)
             );
-
-            // Match POP name itself
-            const popMatches = popName.toLowerCase().includes(term);
-
-            if (popMatches || matchingClients.length > 0) {
-                foundAny = true;
-                // If searching, force expand and show relevant clients
-                renderPopSection(popName, data.loopback_ip, popMatches ? data.clients : matchingClients, true);
-            }
+            if(matches.length > 0 || pop.toLowerCase().includes(term)) 
+                renderPop(pop, rawData[pop].loopback_ip, matches.length?matches:rawData[pop].clients, true);
         });
-
-        if(!foundAny) {
-            container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No results found for "${term}"</div>`;
-        }
     });
 
-    // --- FETCH DATA ---
     async function fetchInventory() {
         try {
             const res = await fetch(`${API_BASE}/api/inventory`);
-            if (!res.ok) throw new Error("Backend Connection Failed");
-            
             rawData = await res.json();
-            
-            if (Object.keys(rawData).length === 0) {
-                document.getElementById('main-container').innerHTML = `<div style="text-align:center; padding:40px;">Inventory is empty or CSV missing.</div>`;
-                return;
-            }
-
             renderAll(rawData);
-            
-        } catch (err) {
-            document.getElementById('main-container').innerHTML = 
-                `<div style="color:var(--danger); text-align:center; padding:60px;">
-                    <h2 style="margin-bottom:10px;">⚠️ Backend Offline</h2>
-                    <p>Could not connect to ${API_BASE}</p>
-                    <p style="font-size:0.9rem; color:var(--text-muted); margin-top:10px;">Please run <b>start_backend_v3.bat</b> on the server.</p>
-                 </div>`;
+        } catch(e) {
+            document.getElementById('main-container').innerHTML = `<div style="text-align:center; padding:50px; color:var(--danger);">Backend Offline</div>`;
         }
     }
 
     function renderAll(data) {
-        const container = document.getElementById('main-container');
-        container.innerHTML = '';
-        
-        const popNames = Object.keys(data).sort();
-        popNames.forEach(pop => {
-            const info = data[pop];
-            renderPopSection(pop, info.loopback_ip, info.clients, false);
-        });
+        document.getElementById('main-container').innerHTML = '';
+        Object.keys(data).sort().forEach(pop => renderPop(pop, data[pop].loopback_ip, data[pop].clients, false));
     }
 
-    function renderPopSection(popName, loopback, clients, forceExpand) {
-        const container = document.getElementById('main-container');
-        const gridId = `grid-${popName.replace(/\s+/g, '')}`;
-        const headerId = `hdr-${popName.replace(/\s+/g, '')}`;
-        
-        const section = document.createElement('div');
-        section.className = 'pop-section';
-        
-        const lbBadge = (loopback && loopback !== 'N/A') 
-            ? `<span class="pop-badge">LB: ${loopback}</span>` 
-            : '';
-
-        section.innerHTML = `
-            <div id="${headerId}" class="pop-header" onclick="toggleGrid('${gridId}')">
-                <div class="pop-title">
-                    <span>🏢</span> ${popName} ${lbBadge}
+    function renderPop(pop, lb, clients, expand) {
+        const id = `g-${pop.replace(/\s+/g,'')}`;
+        const html = `
+            <div class="pop-section">
+                <div class="pop-header" onclick="document.getElementById('${id}').classList.toggle('show')">
+                    <span>🏢 ${pop} <small style="color:var(--accent); margin-left:10px;">LB: ${lb}</small></span>
+                    <span>${clients.length} Clients ▾</span>
                 </div>
-                <div style="color:var(--text-muted); font-size:0.9rem;">
-                    ${clients.length} Clients ▾
+                <div id="${id}" class="client-grid ${expand?'show':''}">
+                    ${clients.map(c => `
+                        <div class="link-card">
+                            <div class="card-top">
+                                <div>${c.Client_Name}</div>
+                                <div class="status-dot" id="d-${c.Client_IP.replace(/\./g,'-')}"></div>
+                            </div>
+                            <div style="font-size:0.85rem; color:#94a3b8; display:grid; gap:2px;">
+                                <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
+                                <div>Base: ${c.Base_IP}</div>
+                            </div>
+                            <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}', '${c.Base_IP}')">⚡ Check Status</button>
+                        </div>
+                    `).join('')}
                 </div>
-            </div>
-            <div id="${gridId}" class="client-grid ${forceExpand ? 'show' : ''}">
-                ${clients.map(client => `
-                    <div class="link-card">
-                        <div class="card-top">
-                            <div class="client-name">${client.Client_Name}</div>
-                            <div class="status-dot" id="dot-${client.Client_IP.replace(/\./g, '-')}" title="Status Unknown"></div>
-                        </div>
-                        <div class="card-info">
-                            <div><span style="color:#64748b">IP:</span> <span class="val-ip">${client.Client_IP}</span></div>
-                            <div><span style="color:#64748b">Base:</span> ${client.Base_IP || 'N/A'}</div>
-                            <div><span style="color:#64748b">Loc:</span> ${client.Location || 'N/A'}</div>
-                        </div>
-                        
-                        <button class="btn-diag" onclick="runDiag(this, '${client.Client_Name}', '${client.Client_IP}', '${client.Base_IP}')">
-                            ⚡ Check Status
-                        </button>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        
-        container.appendChild(section);
+            </div>`;
+        document.getElementById('main-container').insertAdjacentHTML('beforeend', html);
     }
 
-    function toggleGrid(id) {
-        const grid = document.getElementById(id);
-        grid.classList.toggle('show');
+    function calcGW(base) {
+        if(!base || base==='N/A') return 'N/A';
+        const p = base.split('.'); p[3] = parseInt(p[3])-1; return p.join('.');
     }
 
-    // --- HELPER: CALCULATE GATEWAY ---
-    function calculateGateway(baseIp) {
-        if(!baseIp || baseIp === 'N/A') return 'N/A';
-        const parts = baseIp.split('.');
-        if(parts.length !== 4) return 'Unknown';
-        // Simple logic: Gateway is usually Base IP - 1
-        // Note: For production, handling .0/.255 wrapping requires more logic, but this covers 99% cases.
-        parts[3] = parseInt(parts[3]) - 1; 
-        return parts.join('.');
-    }
-
-    // --- DIAGNOSIS LOGIC ---
     async function runDiag(btn, name, ip, baseIp) {
-        const originalText = "⚡ Check Status"; // Default text
-        const gwIp = calculateGateway(baseIp);
-
-        // 1. SHOW SCANNING UI (The List)
+        const orgTxt = "⚡ Check Status";
+        const gw = calcGW(baseIp);
+        
         btn.innerHTML = `
             <div class="scan-box">
-                <div class="scan-header">
-                   <span class="spinner"></span> Measuring Loss...
-                </div>
+                <div class="scan-header"><span class="spinner"></span> Analyzing RF Path...</div>
                 <div class="scan-row"><span>Client:</span> <span>${ip}</span></div>
                 <div class="scan-row"><span>Base:</span> <span>${baseIp}</span></div>
-                <div class="scan-row"><span>GW:</span> <span>${gwIp}</span></div>
-            </div>
-        `;
+                <div class="scan-row"><span>GW:</span> <span>${gw}</span></div>
+            </div>`;
         btn.disabled = true;
 
         try {
             const res = await fetch(`${API_BASE}/api/diagnose`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, ip: ip })
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, ip})
             });
-
             const data = await res.json();
             
-            // 2. PROCESS RESULTS
-            const dot = document.getElementById(`dot-${ip.replace(/\./g, '-')}`);
+            const dot = document.getElementById(`d-${ip.replace(/\./g,'-')}`);
+            const cInfo = data.steps.find(s=>s.target.includes("Client"));
             
-            // Find client packet loss for the button text
-            const clientStep = data.steps.find(s => s.target.includes("Client"));
-            const lossStr = clientStep ? clientStep.loss : "?";
-
             if(data.final_status.includes("UP")) {
                 dot.className = "status-dot status-up";
-                
-                // Color Code: Green if 0% loss, Orange if weak
-                if(lossStr !== "0%" && lossStr !== "?") {
+                // Show Signal info on button if available
+                let btnMsg = `LINK UP`;
+                if(cInfo && cInfo.loss !== "0%" && cInfo.loss !== "N/A") {
                     btn.style.background = "var(--warning)";
-                    btn.innerHTML = `⚠️ WEAK SIGNAL (${lossStr})`;
+                    btnMsg = `⚠️ LOSS: ${cInfo.loss}`;
+                } else if(cInfo && cInfo.data && cInfo.data.rssi && cInfo.data.rssi !== "N/A") {
+                    btn.style.background = "var(--success)";
+                    btnMsg = `🟢 ${cInfo.data.rssi}`;
                 } else {
                     btn.style.background = "var(--success)";
-                    btn.innerHTML = `LINK UP (0%)`;
                 }
-
+                btn.innerHTML = btnMsg;
             } else {
                 dot.className = "status-dot status-down";
                 btn.style.background = "var(--danger)";
                 btn.innerHTML = "🔴 ISSUE FOUND";
-                
-                // Show Detailed Report
                 showModal(name, data);
             }
-
-        } catch (e) {
-            console.error(e);
+        } catch(e) {
             btn.innerHTML = "Error";
             btn.style.background = "#475569";
         } finally {
-            // Reset button after 6 seconds
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.style.background = "";
-                btn.innerHTML = originalText;
-            }, 6000);
+            setTimeout(() => { btn.disabled=false; btn.style.background=""; btn.innerHTML=orgTxt; }, 8000);
         }
     }
 
     function showModal(name, data) {
         document.getElementById('m-client').innerText = name;
-        
-        // Final Status Color
-        const finalEl = document.getElementById('m-final');
-        finalEl.innerText = data.final_status;
+        const f = document.getElementById('m-final');
+        f.innerText = data.final_status;
+        f.style.color = data.final_status.includes("UP") ? "var(--success)" : "var(--danger)";
         document.getElementById('m-cause').innerText = data.cause;
 
-        if(data.final_status.includes("UP")) finalEl.style.color = "var(--success)";
-        else if(data.final_status.includes("CLIENT")) finalEl.style.color = "var(--warning)";
-        else finalEl.style.color = "var(--danger)";
-
-        // RENDER STEPS ROW
-        const stepsHtml = data.steps.map(s => {
-            // Determine Loss Color
-            let lossClass = 'loss-good';
-            if(s.loss === '100%') lossClass = 'loss-bad';
-            else if(s.loss !== '0%') lossClass = 'loss-warn';
-
-            return `
+        document.getElementById('m-steps').innerHTML = data.steps.map(s => `
             <div class="result-row">
-                <div style="flex: 2;">
-                    <div class="res-target">${s.target}</div>
-                    <div class="res-ip">${s.ip}</div>
+                <div>
+                    <div class="res-label">${s.target}</div>
+                    <div class="res-sub">${s.ip}</div>
                 </div>
-                <div style="flex: 1; text-align: center;">
-                    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase;">Packet Loss</div>
-                    <div class="res-loss ${lossClass}">${s.loss || '--'}</div>
-                </div>
-                <div style="flex: 1; text-align: right;">
-                    <span class="res-status ${s.status === 'UP' ? 'st-UP' : (s.status === 'SKIPPED' ? 'st-SKIPPED' : 'st-DOWN')}">
-                        ${s.status}
-                    </span>
-                </div>
-            </div>`;
-        }).join('');
-
-        document.getElementById('m-steps').innerHTML = stepsHtml;
+                <div class="res-val" style="color:${s.loss!=='0%' && s.loss!=='N/A'?'var(--warning)':'#94a3b8'}">${s.loss}</div>
+                <div class="res-val">${s.data.rssi || '-'}</div>
+                <div class="res-val">${s.data.lan_speed || '-'}</div>
+                <div class="res-status ${s.status==='UP'?'st-UP':'st-DOWN'}">${s.status}</div>
+            </div>
+        `).join('');
         document.getElementById('diagModal').classList.add('open');
     }
 
-    function closeModal() {
-        document.getElementById('diagModal').classList.remove('open');
-    }
+    function closeModal() { document.getElementById('diagModal').classList.remove('open'); }
 </script>
-
 </body>
 </html>
