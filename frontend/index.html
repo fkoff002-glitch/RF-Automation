@@ -3,435 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Command Center | AmberIT</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>RF Links Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-dark: #09090b;
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --primary: #6366f1; /* Indigo */
-            --accent: #8b5cf6;  /* Violet */
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+        /* --- NEW STYLES FOR DIAGNOSTICS --- */
+        /* Amber Button for Diagnostics */
+        .action-btn.diag {
+            background: #f59e0b; 
+            color: #fff;
+        }
+        .action-btn.diag:hover {
+            background: #d97706;
+            transform: translateY(-2px);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg-dark); color: var(--text-main); font-family: 'Outfit', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        /* Diagnostic Modal Specifics */
+        .diag-header {
+            background: #1e293b; /* Dark Blue/Grey */
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .diag-body {
+            padding: 30px;
+            text-align: center;
+        }
+        .status-badge {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 15px 0;
+            display: block;
+        }
+        .status-UP { color: #10b981; }      /* Green */
+        .status-DOWN { color: #ef4444; }    /* Red */
+        .status-UNSTABLE { color: #f59e0b; } /* Orange */
 
-        /* --- SIDEBAR --- */
-        .sidebar { width: 280px; background: rgba(0,0,0,0.4); border-right: 1px solid var(--glass-border); padding: 25px; display: flex; flex-direction: column; backdrop-filter: blur(10px); z-index: 20; }
-        .logo { font-size: 1.4rem; font-weight: 700; background: linear-gradient(45deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-        
-        .nav-group { display: flex; flex-direction: column; gap: 8px; }
-        .nav-item { padding: 14px 18px; border-radius: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 12px; font-weight: 500; border: 1px solid transparent; }
-        .nav-item:hover { background: var(--glass); color: white; border-color: var(--glass-border); }
-        .nav-item.active { background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent); color: var(--primary); border-left: 3px solid var(--primary); }
-
-        .owner-card { margin-top: auto; padding: 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); border-radius: 16px; border: 1px solid var(--glass-border); }
-        .owner-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .owner-name { font-weight: 700; color: white; margin-top: 5px; font-size: 1.1rem; }
-
-        /* --- MAIN AREA --- */
-        .main-content { flex: 1; position: relative; overflow-y: auto; background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%); }
-        .page-section { display: none; padding: 40px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s ease-out; }
-        .page-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- HERO (INTRO PAGE) --- */
-        .hero-banner { background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); border: 1px solid var(--glass-border); border-radius: 24px; padding: 60px; text-align: center; margin-bottom: 40px; position: relative; overflow: hidden; }
-        .hero-banner::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 60%); animation: pulse 10s infinite; pointer-events: none; }
-        .hero-title { font-size: 3rem; font-weight: 700; margin-bottom: 20px; line-height: 1.2; }
-        .hero-desc { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
-
-        /* --- CARDS & GRIDS --- */
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
-        .glass-card { background: var(--glass); border: 1px solid var(--glass-border); padding: 25px; border-radius: 16px; backdrop-filter: blur(5px); transition: transform 0.3s; }
-        .glass-card:hover { transform: translateY(-5px); border-color: rgba(99, 102, 241, 0.3); }
-        .card-icon { width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 15px; }
-        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; }
-        .card-text { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
-
-        /* --- DATA TABLES --- */
-        .search-bar { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 15px 20px; border-radius: 12px; font-size: 1rem; margin-bottom: 30px; outline: none; transition: border 0.2s; }
-        .search-bar:focus { border-color: var(--primary); }
-        
-        .table-container { background: var(--glass); border-radius: 16px; border: 1px solid var(--glass-border); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 18px 25px; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid var(--glass-border); }
-        td { padding: 18px 25px; border-bottom: 1px solid rgba(255,255,255,0.02); color: var(--text-main); font-size: 0.95rem; }
-        tr:hover td { background: rgba(255,255,255,0.02); cursor: pointer; }
-        .tag { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-        .tag-amber { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .tag-telco { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-
-        /* --- DIAGNOSIS PANEL (SLIDEOUT) --- */
-        .slide-panel { position: fixed; top: 0; right: -650px; width: 650px; height: 100%; background: #0c0c0e; border-left: 1px solid var(--glass-border); z-index: 100; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: -20px 0 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
-        .slide-panel.open { right: 0; }
-        .panel-header { padding: 30px; border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.01); }
-        .panel-body { padding: 30px; overflow-y: auto; flex: 1; }
-        
-        /* DIAGNOSTICS UI */
-        .topology-map { display: flex; align-items: center; justify-content: space-between; margin: 40px 0; position: relative; padding: 0 20px; }
-        .topology-line { position: absolute; top: 50%; left: 60px; right: 60px; height: 2px; background: #333; z-index: 0; }
-        .node { width: 90px; height: 90px; background: #18181b; border: 2px solid #333; border-radius: 16px; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; }
-        .node i { margin-bottom: 5px; color: #555; }
-        .node span { font-size: 0.7rem; font-weight: 700; color: #777; letter-spacing: 0.5px; margin-top: 5px; }
-        
-        .node.up { border-color: var(--success); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15); } .node.up i { color: var(--success); }
-        .node.down { border-color: var(--danger); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); } .node.down i { color: var(--danger); }
-        .node.warn { border-color: var(--warning); box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); } .node.warn i { color: var(--warning); }
-
-        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .metric-box { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-        .metric-val { font-family: 'JetBrains Mono'; font-size: 1.5rem; font-weight: 600; margin: 5px 0; color: white; }
-        .metric-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-
-        .btn-main { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
-        .btn-main:hover { background: #4f46e5; transform: translateY(-2px); }
-        .btn-main:disabled { opacity: 0.7; cursor: wait; transform: none; }
-
-        @keyframes pulse { 0% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } 100% { opacity: 0.5; transform: scale(1); } }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
+        .diag-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .diag-table th {
+            background: #f8fafc;
+            padding: 10px;
+            color: #64748b;
+        }
+        .diag-table td {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px;
+            color: #334155;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-satellite-dish"></i> RF Links Management System</h1>
+            <p class="subtitle">Manage your radio links & Monitor Network Health</p>
+        </header>
 
-    <div class="sidebar">
-        <div class="logo">
-            <i data-lucide="radio-tower"></i>
-            <span>SMART NOC</span>
-        </div>
-        
-        <div class="nav-group">
-            <div class="nav-item active" onclick="switchPage('intro', this)">
-                <i data-lucide="home"></i> Introduction
+        <div class="controls">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search Client, IP, BTS...">
             </div>
-            <div class="nav-item" onclick="switchPage('clients', this)">
-                <i data-lucide="users"></i> Client Data
-            </div>
-            <div class="nav-item" onclick="switchPage('infrastructure', this)">
-                <i data-lucide="server"></i> BTS & POP List
+            <div class="button-group">
+                <button id="addLinkBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Link
+                </button>
+                <button id="exportBtn" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Export CSV
+                </button>
+                <button id="importBtn" class="btn btn-secondary">
+                    <i class="fas fa-upload"></i> Import CSV
+                </button>
+                <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                <button id="resetBtn" class="btn btn-danger">
+                    <i class="fas fa-redo"></i> Reset Data
+                </button>
             </div>
         </div>
 
-        <div class="owner-card">
-            <div class="owner-label">Project Owner</div>
-            <div class="owner-name">Sakib</div>
-            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 5px;">Lead RF Engineer</div>
+        <div class="stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-link"></i> Total Links</h3>
+                <p id="totalLinks">0</p>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-map-marker-alt"></i> Locations</h3>
+                <p id="uniqueLocations">0</p>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-network-wired"></i> POPs</h3>
+                <p id="uniquePOPs">0</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="linksTable">
+                <thead>
+                    <tr>
+                        <th>Link ID</th>
+                        <th>POP Name</th>
+                        <th>BTS Name</th>
+                        <th>Client Name</th>
+                        <th>Base IP</th>
+                        <th>Client IP</th>
+                        <th>Loopback IP</th>
+                        <th>Location</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="9" style="text-align:center; padding:20px;">Connecting to Python Backend...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button id="prevBtn" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> Previous</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button id="nextBtn" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></button>
         </div>
     </div>
 
-    <div class="main-content">
-        
-        <div id="page-intro" class="page-section active">
-            <div class="hero-banner">
-                <h1 class="hero-title">Next-Gen RF Automation<br>System</h1>
-                <p class="hero-desc">
-                    A centralized command center for monitoring Radio Frequency health, Signal Stability, and Network Latency across AmberIT and Telco infrastructures.
-                </p>
+    <div id="linkModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Link</h2>
+                <span class="close close-modal">&times;</span>
             </div>
-
-            <div class="grid-3">
-                <div class="glass-card">
-                    <div class="card-icon"><i data-lucide="activity"></i></div>
-                    <div class="card-title">Real-time Diagnostics</div>
-                    <p class="card-text">Automated 20-packet precision ping and dual-ended SNMP signal analysis to detect jitter and packet loss instantly.</p>
-                </div>
-                <div class="glass-card">
-                    <div class="card-icon"><i data-lucide="zap"></i></div>
-                    <div class="card-title">Intelligent Logic</div>
-                    <p class="card-text">Smart algorithms differentiate between stable signals, minor weather fluctuations, and critical misalignment issues.</p>
-                </div>
-                <div class="glass-card">
-                    <div class="card-icon"><i data-lucide="shield-check"></i></div>
-                    <div class="card-title">Proactive Maintenance</div>
-                    <p class="card-text">Identify potential link failures before the client reports them. Monitor Base Stations and Gateways in one view.</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="page-clients" class="page-section">
-            <h2 style="margin-bottom: 20px; font-size: 1.8rem;">Client Database</h2>
-            <input type="text" id="clientSearch" class="search-bar" placeholder="Search by Client Name, IP, Location, or BTS..." oninput="filterClients()">
-            
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>IP Address</th>
-                            <th>Base Station</th>
-                            <th>Location</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientTableBody">
-                        <tr><td colspan="5" style="text-align:center; padding:30px; color:#666;">Loading System Data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="page-infrastructure" class="page-section">
-            <h2 style="margin-bottom: 20px; font-size: 1.8rem;">Infrastructure Overview</h2>
-            
-            <div class="grid-3" style="margin-bottom: 30px;">
-                <div class="glass-card">
-                    <div class="card-title" id="stat-pops">0</div>
-                    <div class="card-text">Total Active POPs</div>
-                </div>
-                <div class="glass-card">
-                    <div class="card-title" id="stat-telco">0</div>
-                    <div class="card-text">Telco Towers (GP/Robi/BL)</div>
-                </div>
-                <div class="glass-card">
-                    <div class="card-title" id="stat-amber">0</div>
-                    <div class="card-text">AmberIT Owned POPs</div>
-                </div>
-            </div>
-
-            <h3 style="margin-bottom: 15px; color: var(--text-muted);">POP & BTS List</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Site Name</th>
-                            <th>Loopback IP</th>
-                            <th>Connected Clients</th>
-                            <th>Type</th>
-                        </tr>
-                    </thead>
-                    <tbody id="infraTableBody">
-                        <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="diagPanel" class="slide-panel">
-        <div class="panel-header">
-            <button onclick="closePanel()" style="float:right; background:none; border:none; color:white; cursor:pointer;"><i data-lucide="x"></i></button>
-            <h2 id="p-name">Client Name</h2>
-            <div style="font-family:'JetBrains Mono'; color:var(--primary); margin-top:5px;" id="p-ip">10.0.0.0</div>
-        </div>
-        <div class="panel-body">
-            <button class="btn-main" id="btnRun" onclick="runTest()">
-                <i data-lucide="play"></i> Run Diagnostics
-            </button>
-
-            <div id="resultsArea" style="display:none; margin-top: 30px;">
-                <div style="text-align:center; padding: 20px; background:rgba(255,255,255,0.02); border-radius:12px; margin-bottom:20px;">
-                    <div id="res-status" style="font-size:2rem; font-weight:800; color:white;">--</div>
-                    <div id="res-cause" style="color:#aaa; margin-top:5px;">--</div>
-                </div>
-
-                <div class="topology-map">
-                    <div class="topology-line"></div>
-                    <div class="node" id="n-gw"><i data-lucide="server"></i><span>GW</span></div>
-                    <div class="node" id="n-base"><i data-lucide="router"></i><span>BASE</span></div>
-                    <div class="node" id="n-client"><i data-lucide="wifi"></i><span>CLIENT</span></div>
-                </div>
-
-                <div style="font-size:0.8rem; color:#666; text-transform:uppercase; margin-bottom:10px;">Client Telemetry</div>
-                <div class="metric-grid">
-                    <div class="metric-box">
-                        <div class="metric-lbl">Signal Strength</div>
-                        <div class="metric-val" id="m-rssi">--</div>
-                        <div style="font-size:0.7rem; color:#888;" id="m-stab">Stability: --</div>
+            <div class="modal-body">
+                <form id="linkForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="linkId">Link ID *</label>
+                            <input type="text" id="linkId" name="linkId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="popName">POP Name *</label>
+                            <input type="text" id="popName" name="popName" required>
+                        </div>
                     </div>
-                    <div class="metric-box">
-                        <div class="metric-lbl">Packet Loss</div>
-                        <div class="metric-val" id="m-loss">--</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="btsName">BTS Name *</label>
+                            <input type="text" id="btsName" name="btsName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientName">Client Name *</label>
+                            <input type="text" id="clientName" name="clientName" required>
+                        </div>
                     </div>
-                    <div class="metric-box">
-                        <div class="metric-lbl">LAN Speed</div>
-                        <div class="metric-val" id="m-lan">--</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-lbl">Latency</div>
-                        <div class="metric-val" id="m-lat">--</div>
-                    </div>
-                </div>
 
-                <div style="font-size:0.8rem; color:#666; text-transform:uppercase; margin-bottom:10px; margin-top:20px;">Base Station Telemetry</div>
-                <div class="metric-grid">
-                     <div class="metric-box">
-                        <div class="metric-lbl">Signal Strength</div>
-                        <div class="metric-val" id="b-rssi">--</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="baseIP">Base IP *</label>
+                            <input type="text" id="baseIP" name="baseIP" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientIP">Client IP *</label>
+                            <input type="text" id="clientIP" name="clientIP" required>
+                        </div>
                     </div>
-                    <div class="metric-box">
-                        <div class="metric-lbl">Packet Loss</div>
-                        <div class="metric-val" id="b-loss">--</div>
-                    </div>
-                </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loopbackIP">Loopback IP</label>
+                            <input type="text" id="loopbackIP" name="loopbackIP">
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Location *</label>
+                            <input type="text" id="location" name="location" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Link</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-<script>
-    const API_BASE = 'http://192.168.0.104:8000'; // YOUR IP
-    let inventory = [];
-    let currentClient = null;
+    <div id="diagModal" class="modal">
+        <div class="modal-content" style="max-width: 550px; overflow: hidden;">
+            <div class="diag-header">
+                <h2 style="margin:0; font-size:1.5rem;"><i class="fas fa-heartbeat"></i> Live Diagnosis</h2>
+                <span class="close" onclick="document.getElementById('diagModal').style.display='none'" style="color:white;">&times;</span>
+            </div>
+            <div class="modal-body diag-body" id="diagContent">
+                <i class="fas fa-spinner fa-spin fa-3x" style="color:#667eea"></i>
+                <p style="margin-top:20px; color:#666;">Scanning Network Path...</p>
+                <small style="color:#999;">Running 20-packet stress test</small>
+            </div>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', loadData);
-    lucide.createIcons();
+    <div id="confirmModal" class="modal">
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h2>Confirm Action</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to delete this link?</p>
+                <div class="confirm-actions">
+                    <button id="confirmCancel" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmOk" class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // NAVIGATION
-    function switchPage(pageId, btn) {
-        document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-        document.getElementById(`page-${pageId}`).classList.add('active');
-        
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-    }
+    <footer>
+        <p>RF Links Management System &copy; 2026 | Powered by Smart NOC Python Backend</p>
+    </footer>
 
-    // LOAD DATA
-    async function loadData() {
-        try {
-            const res = await fetch(`${API_BASE}/api/inventory`);
-            const json = await res.json();
-            inventory = json.data;
-            const stats = json.stats;
-
-            // Render Clients
-            renderClients(inventory);
-            
-            // Render Infrastructure
-            renderInfra(inventory);
-
-            // Update Stats
-            document.getElementById('stat-pops').innerText = stats.total_pops;
-            document.getElementById('stat-telco').innerText = stats.telco_bts;
-            document.getElementById('stat-amber').innerText = stats.amber_pops;
-
-        } catch(e) { console.error("API Error", e); }
-    }
-
-    // RENDER CLIENT TABLE
-    function renderClients(data) {
-        const tbody = document.getElementById('clientTableBody');
-        tbody.innerHTML = data.map(c => `
-            <tr onclick='openDiag(${JSON.stringify(c)})'>
-                <td style="font-weight:600; color:white;">${c.Client_Name}</td>
-                <td style="font-family:'JetBrains Mono'; color:#aaa;">${c.Client_IP}</td>
-                <td>${c.Base_IP}</td>
-                <td>${c.Location}</td>
-                <td><span class="tag tag-amber">Diagnose</span></td>
-            </tr>
-        `).join('');
-    }
-
-    // RENDER INFRA TABLE (Unique POPs)
-    function renderInfra(data) {
-        const pops = {};
-        data.forEach(c => {
-            if(!pops[c.POP_Name]) pops[c.POP_Name] = { name: c.POP_Name, ip: c.Loopback_IP, count: 0 };
-            pops[c.POP_Name].count++;
-        });
-
-        const tbody = document.getElementById('infraTableBody');
-        tbody.innerHTML = Object.values(pops).map(p => {
-            const isTelco = /GP|Robi|BL|Teletalk/i.test(p.name);
-            return `
-            <tr>
-                <td style="font-weight:600; color:white;">${p.name}</td>
-                <td style="font-family:'JetBrains Mono'; color:#aaa;">${p.ip}</td>
-                <td>${p.count} Clients</td>
-                <td><span class="tag ${isTelco ? 'tag-telco' : 'tag-amber'}">${isTelco ? 'Telco Tower' : 'Amber POP'}</span></td>
-            </tr>
-            `;
-        }).join('');
-    }
-
-    // SEARCH
-    function filterClients() {
-        const term = document.getElementById('clientSearch').value.toLowerCase();
-        const filtered = inventory.filter(c => 
-            c.Client_Name.toLowerCase().includes(term) || 
-            c.Client_IP.includes(term) || 
-            c.Base_IP.includes(term)
-        );
-        renderClients(filtered);
-    }
-
-    // DIAGNOSTICS LOGIC
-    function openDiag(client) {
-        currentClient = client;
-        document.getElementById('p-name').innerText = client.Client_Name;
-        document.getElementById('p-ip').innerText = client.Client_IP;
-        document.getElementById('resultsArea').style.display = 'none';
-        document.getElementById('btnRun').disabled = false;
-        document.getElementById('btnRun').innerHTML = `<i data-lucide="play"></i> Run Diagnostics`;
-        document.getElementById('diagPanel').classList.add('open');
-        lucide.createIcons();
-    }
-
-    function closePanel() { document.getElementById('diagPanel').classList.remove('open'); }
-
-    async function runTest() {
-        const btn = document.getElementById('btnRun');
-        btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Analyzing Network...`;
-
-        try {
-            const res = await fetch(`${API_BASE}/api/diagnose`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name: currentClient.Client_Name, ip: currentClient.Client_IP })
-            });
-            const data = await res.json();
-            
-            document.getElementById('resultsArea').style.display = 'block';
-
-            // Status
-            const statusEl = document.getElementById('res-status');
-            statusEl.innerText = data.final_status;
-            statusEl.style.color = data.final_status.includes("UP") ? "var(--success)" : 
-                                   (data.final_status.includes("UNSTABLE") ? "var(--warning)" : "var(--danger)");
-            document.getElementById('res-cause').innerText = data.cause;
-
-            // Metrics - Client
-            const c = data.topology.client;
-            document.getElementById('m-rssi').innerText = c.data.rssi || '--';
-            document.getElementById('m-rssi').style.color = (c.data.rssi && parseInt(c.data.rssi) > -65) ? "var(--success)" : "white";
-            document.getElementById('m-stab').innerText = c.data.stability || '--';
-            document.getElementById('m-loss').innerText = c.loss;
-            document.getElementById('m-lan').innerText = c.data.lan_speed || '--';
-            document.getElementById('m-lat').innerText = c.latency || '--';
-
-            // Metrics - Base
-            const b = data.topology.base;
-            document.getElementById('b-rssi').innerText = b.data.rssi || '--';
-            document.getElementById('b-loss').innerText = b.loss;
-
-            // Topology
-            setNode('n-client', c.status);
-            setNode('n-base', b.status);
-            setNode('n-gw', data.topology.gw.status);
-
-        } catch(e) { alert("Test Failed"); }
-        finally {
-            btn.innerHTML = `<i data-lucide="check-circle"></i> Complete`;
-            lucide.createIcons();
-        }
-    }
-
-    function setNode(id, status) {
-        const el = document.getElementById(id);
-        el.className = 'node'; // reset
-        if(status === 'UP') el.classList.add('up');
-        else if(status === 'DOWN') el.classList.add('down');
-        else el.classList.add('warn');
-    }
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
