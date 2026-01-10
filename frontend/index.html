@@ -8,21 +8,15 @@
         :root { --bg-body: #0b0f19; --bg-panel: #151e32; --bg-header: #1e293b; --border: #2a3b55; --text-main: #e2e8f0; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg-body); color: var(--text-main); font-family: system-ui, sans-serif; padding-bottom: 50px; }
-
-        /* HEADER */
         header { background: var(--bg-panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
         .brand span { color: var(--accent); font-weight: bold; }
         .search-input { background: var(--bg-body); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; width: 350px; }
-
-        /* GRID */
         .container { max-width: 1600px; margin: 25px auto; padding: 0 20px; }
         .pop-section { margin-bottom: 25px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); overflow: hidden; }
         .pop-header { padding: 15px 25px; background: var(--bg-header); cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; }
         .pop-header:hover { background: #253346; }
         .client-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; padding: 20px; }
         .client-grid.show { display: grid; }
-
-        /* CARD */
         .link-card { background: var(--bg-panel); border: 1px solid var(--border); padding: 20px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.2s; }
         .link-card:hover { transform: translateY(-3px); border-color: var(--accent); }
         .card-top { display: flex; justify-content: space-between; font-weight: bold; }
@@ -30,60 +24,47 @@
         .status-up { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .status-down { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
         .val-ip { font-family: monospace; color: #cbd5e1; }
-
-        /* BUTTON */
         .btn-diag { margin-top: 5px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; min-height: 45px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; transition: background 0.2s; width: 100%; padding: 0; }
         .btn-diag:hover { background: #2563eb; }
         .btn-diag:disabled { cursor: wait; }
-
-        /* SCAN BOX */
         .scan-box { display: flex; flex-direction: column; width: 100%; padding: 10px 15px; font-size: 0.75rem; font-family: monospace; gap: 4px; text-align: left; }
-        .scan-header { font-weight: bold; margin-bottom: 2px; display: flex; gap: 8px; align-items: center; }
-        .scan-row { display: flex; justify-content: space-between; color: rgba(255,255,255,0.8); }
         .spinner { width: 12px; height: 12px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to {transform: rotate(360deg);} }
-
-        /* MODAL */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-overlay.open { display: flex; }
-        .modal-box { background: var(--bg-panel); width: 700px; max-width: 95%; border: 1px solid var(--border); border-radius: 12px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        
-        /* RESULT TABLE */
-        .result-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); align-items: center; font-size: 0.9rem; }
+        .modal-box { background: var(--bg-panel); width: 850px; max-width: 95%; border: 1px solid var(--border); border-radius: 12px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .result-row { display: grid; grid-template-columns: 2fr 1fr 2fr 1fr 1fr; gap: 10px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); align-items: center; font-size: 0.9rem; }
         .res-label { font-weight: bold; }
         .res-sub { font-size: 0.8rem; color: #94a3b8; font-family: monospace; }
         .res-val { font-family: monospace; text-align: center; color: var(--accent); }
         .res-status { font-weight: bold; padding: 4px 8px; border-radius: 4px; text-align: center; font-size: 0.8rem; }
         .st-UP { background: rgba(16, 185, 129, 0.2); color: #10b981; }
         .st-DOWN { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-
+        .stab-ok { color: #10b981; font-size: 0.75rem; }
+        .stab-bad { color: #ef4444; font-size: 0.75rem; font-weight: bold; }
+        .stab-warn { color: #f59e0b; font-size: 0.75rem; }
     </style>
 </head>
 <body>
-
 <header>
     <div class="brand"><span>RF</span> SMART NOC</div>
     <input type="text" id="searchInput" class="search-input" placeholder="Search Client, IP, BTS...">
 </header>
-
 <div class="container" id="main-container">
     <div style="text-align:center; padding:60px; color:#64748b;">Loading System...</div>
 </div>
-
 <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
         <h3 id="m-client" style="color:var(--accent); margin-bottom: 5px; font-size: 1.3rem;">--</h3>
         <div style="font-size:0.9rem; color:#94a3b8; margin-bottom: 25px;">Detailed Path Analysis</div>
-        
         <div class="result-row" style="border-bottom: 2px solid #334155; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
             <div>Target</div>
-            <div style="text-align:center">Loss</div>
-            <div style="text-align:center">Signal</div>
+            <div style="text-align:center">Loss (20 Pkts)</div>
+            <div style="text-align:center">Signal (Avg/Stability)</div>
             <div style="text-align:center">LAN</div>
             <div style="text-align:center">Status</div>
         </div>
         <div id="m-steps"></div>
-
         <div style="background: var(--bg-body); padding: 20px; border-radius: 8px; text-align: center; margin-top: 25px; border: 1px solid var(--border);">
             <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">ROOT CAUSE</div>
             <div id="m-final" style="font-size:1.4rem; font-weight:bold;">--</div>
@@ -92,41 +73,24 @@
         <button onclick="closeModal()" style="width:100%; margin-top:20px; padding:12px; background:#334155; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Close Report</button>
     </div>
 </div>
-
 <script>
     const API_BASE = 'http://192.168.0.104:8000';
     let rawData = {};
-
     document.addEventListener('DOMContentLoaded', fetchInventory);
-
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         document.getElementById('main-container').innerHTML = '';
         if (!term) { renderAll(rawData); return; }
         Object.keys(rawData).forEach(pop => {
-            const matches = rawData[pop].clients.filter(c => 
-                c.Client_Name.toLowerCase().includes(term) || c.Client_IP.includes(term)
-            );
-            if(matches.length > 0 || pop.toLowerCase().includes(term)) 
-                renderPop(pop, rawData[pop].loopback_ip, matches.length?matches:rawData[pop].clients, true);
+            const matches = rawData[pop].clients.filter(c => c.Client_Name.toLowerCase().includes(term) || c.Client_IP.includes(term));
+            if(matches.length > 0 || pop.toLowerCase().includes(term)) renderPop(pop, rawData[pop].loopback_ip, matches.length?matches:rawData[pop].clients, true);
         });
     });
-
     async function fetchInventory() {
-        try {
-            const res = await fetch(`${API_BASE}/api/inventory`);
-            rawData = await res.json();
-            renderAll(rawData);
-        } catch(e) {
-            document.getElementById('main-container').innerHTML = `<div style="text-align:center; padding:50px; color:var(--danger);">Backend Offline</div>`;
-        }
+        try { const res = await fetch(`${API_BASE}/api/inventory`); rawData = await res.json(); renderAll(rawData); } 
+        catch(e) { document.getElementById('main-container').innerHTML = `<div style="text-align:center; padding:50px; color:var(--danger);">Backend Offline</div>`; }
     }
-
-    function renderAll(data) {
-        document.getElementById('main-container').innerHTML = '';
-        Object.keys(data).sort().forEach(pop => renderPop(pop, data[pop].loopback_ip, data[pop].clients, false));
-    }
-
+    function renderAll(data) { document.getElementById('main-container').innerHTML = ''; Object.keys(data).sort().forEach(pop => renderPop(pop, data[pop].loopback_ip, data[pop].clients, false)); }
     function renderPop(pop, lb, clients, expand) {
         const id = `g-${pop.replace(/\s+/g,'')}`;
         const html = `
@@ -138,101 +102,58 @@
                 <div id="${id}" class="client-grid ${expand?'show':''}">
                     ${clients.map(c => `
                         <div class="link-card">
-                            <div class="card-top">
-                                <div>${c.Client_Name}</div>
-                                <div class="status-dot" id="d-${c.Client_IP.replace(/\./g,'-')}"></div>
-                            </div>
-                            <div style="font-size:0.85rem; color:#94a3b8; display:grid; gap:2px;">
-                                <div>IP: <span class="val-ip">${c.Client_IP}</span></div>
-                                <div>Base: ${c.Base_IP}</div>
-                            </div>
+                            <div class="card-top"><div>${c.Client_Name}</div><div class="status-dot" id="d-${c.Client_IP.replace(/\./g,'-')}"></div></div>
+                            <div style="font-size:0.85rem; color:#94a3b8; display:grid; gap:2px;"><div>IP: <span class="val-ip">${c.Client_IP}</span></div><div>Base: ${c.Base_IP}</div></div>
                             <button class="btn-diag" onclick="runDiag(this, '${c.Client_Name}', '${c.Client_IP}', '${c.Base_IP}')">⚡ Check Status</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
+                        </div>`).join('')}
+                </div></div>`;
         document.getElementById('main-container').insertAdjacentHTML('beforeend', html);
     }
-
-    function calcGW(base) {
-        if(!base || base==='N/A') return 'N/A';
-        const p = base.split('.'); p[3] = parseInt(p[3])-1; return p.join('.');
-    }
-
+    function calcGW(base) { if(!base || base==='N/A') return 'N/A'; const p = base.split('.'); p[3] = parseInt(p[3])-1; return p.join('.'); }
     async function runDiag(btn, name, ip, baseIp) {
         const orgTxt = "⚡ Check Status";
         const gw = calcGW(baseIp);
-        
-        btn.innerHTML = `
-            <div class="scan-box">
-                <div class="scan-header"><span class="spinner"></span> Analyzing RF Path...</div>
-                <div class="scan-row"><span>Client:</span> <span>${ip}</span></div>
-                <div class="scan-row"><span>Base:</span> <span>${baseIp}</span></div>
-                <div class="scan-row"><span>GW:</span> <span>${gw}</span></div>
-            </div>`;
+        btn.innerHTML = `<div class="scan-box"><div class="scan-header"><span class="spinner"></span> 20-Packet Stress Test...</div><div class="scan-row"><span>Client:</span> <span>${ip}</span></div><div class="scan-row"><span>Base:</span> <span>${baseIp}</span></div></div>`;
         btn.disabled = true;
-
         try {
-            const res = await fetch(`${API_BASE}/api/diagnose`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name, ip})
-            });
+            const res = await fetch(`${API_BASE}/api/diagnose`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, ip}) });
             const data = await res.json();
-            
             const dot = document.getElementById(`d-${ip.replace(/\./g,'-')}`);
             const cInfo = data.steps.find(s=>s.target.includes("Client"));
-            
-            if(data.final_status.includes("UP")) {
+            if(data.final_status.includes("UP") || data.final_status.includes("UNSTABLE")) {
                 dot.className = "status-dot status-up";
-                // Show Signal info on button if available
-                let btnMsg = `LINK UP`;
-                if(cInfo && cInfo.loss !== "0%" && cInfo.loss !== "N/A") {
-                    btn.style.background = "var(--warning)";
-                    btnMsg = `⚠️ LOSS: ${cInfo.loss}`;
-                } else if(cInfo && cInfo.data && cInfo.data.rssi && cInfo.data.rssi !== "N/A") {
-                    btn.style.background = "var(--success)";
-                    btnMsg = `🟢 ${cInfo.data.rssi}`;
-                } else {
-                    btn.style.background = "var(--success)";
-                }
-                btn.innerHTML = btnMsg;
+                if(data.final_status.includes("UNSTABLE")) { btn.style.background = "var(--warning)"; btn.innerHTML = `⚠️ UNSTABLE`; } 
+                else { btn.style.background = "var(--success)"; btn.innerHTML = `🟢 ${cInfo.data.rssi || 'LINK UP'}`; }
             } else {
-                dot.className = "status-dot status-down";
-                btn.style.background = "var(--danger)";
-                btn.innerHTML = "🔴 ISSUE FOUND";
-                showModal(name, data);
+                dot.className = "status-dot status-down"; btn.style.background = "var(--danger)"; btn.innerHTML = "🔴 ISSUE FOUND"; showModal(name, data);
             }
-        } catch(e) {
-            btn.innerHTML = "Error";
-            btn.style.background = "#475569";
-        } finally {
-            setTimeout(() => { btn.disabled=false; btn.style.background=""; btn.innerHTML=orgTxt; }, 8000);
-        }
+        } catch(e) { btn.innerHTML = "Error"; btn.style.background = "#475569"; } 
+        finally { setTimeout(() => { btn.disabled=false; btn.style.background=""; btn.innerHTML=orgTxt; }, 8000); }
     }
-
     function showModal(name, data) {
         document.getElementById('m-client').innerText = name;
         const f = document.getElementById('m-final');
         f.innerText = data.final_status;
-        f.style.color = data.final_status.includes("UP") ? "var(--success)" : "var(--danger)";
+        f.style.color = data.final_status.includes("UP") ? "var(--success)" : (data.final_status.includes("UNSTABLE") ? "var(--warning)" : "var(--danger)");
         document.getElementById('m-cause').innerText = data.cause;
-
-        document.getElementById('m-steps').innerHTML = data.steps.map(s => `
+        document.getElementById('m-steps').innerHTML = data.steps.map(s => {
+            let stabClass = 'stab-ok';
+            if(s.data && s.data.stability && s.data.stability.includes("UNSTABLE")) stabClass = 'stab-bad';
+            else if(s.data && s.data.stability && s.data.stability.includes("Fluctuation")) stabClass = 'stab-warn';
+            return `
             <div class="result-row">
-                <div>
-                    <div class="res-label">${s.target}</div>
-                    <div class="res-sub">${s.ip}</div>
-                </div>
+                <div><div class="res-label">${s.target}</div><div class="res-sub">${s.ip}</div></div>
                 <div class="res-val" style="color:${s.loss!=='0%' && s.loss!=='N/A'?'var(--warning)':'#94a3b8'}">${s.loss}</div>
-                <div class="res-val">${s.data.rssi || '-'}</div>
+                <div style="text-align:center;">
+                    <div class="res-val">${s.data.rssi || '-'}</div>
+                    <div class="${stabClass}">${s.data.stability || ''}</div>
+                </div>
                 <div class="res-val">${s.data.lan_speed || '-'}</div>
                 <div class="res-status ${s.status==='UP'?'st-UP':'st-DOWN'}">${s.status}</div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
         document.getElementById('diagModal').classList.add('open');
     }
-
     function closeModal() { document.getElementById('diagModal').classList.remove('open'); }
 </script>
 </body>
